@@ -88,7 +88,25 @@ QUESTIONS_DATA = {
     ],
     "reading_writing": [
         {"id": "rw1", "module": 1, "passage": "The following is an excerpt from a short story. \n'The old house stood on a hill overlooking the town. It had been empty for years, and locals said it was haunted. But Sarah, a young journalist, was determined to uncover its secrets.'", "text": "What is Sarah's profession?", "options": ["Ghost hunter", "Historian", "Journalist", "Librarian"], "correctAnswer": "Journalist", "topic": "Information and Ideas", "difficulty": "Easy"},
-        # ... (rest of your reading_writing questions remain the same) ...
+        # Add 18 placeholder questions to make 20 R&W questions
+        {"id": "rw2", "module": 1, "text": "Placeholder Question 2: Identify the main idea.", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "topic": "Main Idea", "difficulty": "Medium"},
+        {"id": "rw3", "module": 1, "text": "Placeholder Question 3: Vocabulary in context.", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "topic": "Vocabulary", "difficulty": "Easy"},
+        {"id": "rw4", "module": 1, "passage": "This is a sample passage for rw4.", "text": "Placeholder Question 4: Inference from passage.", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "topic": "Inference", "difficulty": "Medium"},
+        {"id": "rw5", "module": 1, "text": "Placeholder Question 5: Grammar usage.", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "topic": "Grammar", "difficulty": "Easy"},
+        {"id": "rw6", "module": 1, "text": "Placeholder Question 6: Author's purpose.", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "topic": "Author's Purpose", "difficulty": "Hard"},
+        {"id": "rw7", "module": 1, "passage": "Another sample passage for rw7.", "text": "Placeholder Question 7: Detail from passage.", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "topic": "Detail", "difficulty": "Easy"},
+        {"id": "rw8", "module": 1, "text": "Placeholder Question 8: Sentence structure.", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "topic": "Sentence Structure", "difficulty": "Medium"},
+        {"id": "rw9", "module": 1, "text": "Placeholder Question 9: Tone of the passage.", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "topic": "Tone", "difficulty": "Medium"},
+        {"id": "rw10", "module": 1, "text": "Placeholder Question 10: Comparative analysis.", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "topic": "Analysis", "difficulty": "Hard"},
+        {"id": "rw11", "module": 1, "passage": "Passage for question rw11.", "text": "Placeholder Question 11: Purpose of a paragraph.", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "topic": "Paragraph Purpose", "difficulty": "Medium"},
+        {"id": "rw12", "module": 1, "text": "Placeholder Question 12: Identify a logical flaw.", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "topic": "Logical Reasoning", "difficulty": "Hard"},
+        {"id": "rw13", "module": 1, "text": "Placeholder Question 13: Word choice.", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "topic": "Word Choice", "difficulty": "Medium"},
+        {"id": "rw14", "module": 1, "text": "Placeholder Question 14: Punctuation.", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "topic": "Punctuation", "difficulty": "Easy"},
+        {"id": "rw15", "module": 1, "passage": "Sample text for rw15.", "text": "Placeholder Question 15: Evidence support.", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "topic": "Evidence", "difficulty": "Medium"},
+        {"id": "rw16", "module": 1, "text": "Placeholder Question 16: Literary device.", "options": ["A", "B", "C", "D"], "correctAnswer": "C", "topic": "Literary Devices", "difficulty": "Hard"},
+        {"id": "rw17", "module": 1, "text": "Placeholder Question 17: Transition words.", "options": ["A", "B", "C", "D"], "correctAnswer": "D", "topic": "Transitions", "difficulty": "Easy"},
+        {"id": "rw18", "module": 1, "text": "Placeholder Question 18: Author's claim.", "options": ["A", "B", "C", "D"], "correctAnswer": "A", "topic": "Author's Claim", "difficulty": "Medium"},
+        {"id": "rw19", "module": 1, "passage": "Final placeholder passage for rw19.", "text": "Placeholder Question 19: Summarize.", "options": ["A", "B", "C", "D"], "correctAnswer": "B", "topic": "Summarization", "difficulty": "Medium"},
         {"id": "rw20", "module": 1, "text": "The word 'ubiquitous' means:", "options": ["Rare and hard to find", "Present, appearing, or found everywhere", "Expensive and luxurious", "Temporary and fleeting"], "correctAnswer": "Present, appearing, or found everywhere", "topic": "Craft and Structure (Vocabulary)", "difficulty": "Hard"}
     ]
 }
@@ -96,14 +114,14 @@ ALL_QUESTIONS = QUESTIONS_DATA["math"] + QUESTIONS_DATA["reading_writing"]
 ALL_QUESTIONS_MAP = {q['id']: q for q in ALL_QUESTIONS}
 ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS]
 
-TOTAL_QUESTIONS = len(ALL_QUESTIONS)
-TEST_DURATION_MINUTES = 30
+TOTAL_QUESTIONS = len(ALL_QUESTIONS) # This will now be 30
+TEST_DURATION_MINUTES = 30 # You can adjust this if needed, e.g., to 60 for 30 questions.
 
 def initialize_test_session():
     session['current_question_index'] = 0
     session['answers'] = {}
     session['start_time'] = datetime.datetime.now().isoformat()
-    session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:]
+    session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:] # Use a copy
     session['marked_for_review'] = {}
 
 def calculate_mock_score(answers):
@@ -112,28 +130,64 @@ def calculate_mock_score(answers):
     math_total = 0
     rw_correct = 0
     rw_total = 0
-    for q_id, user_answer in answers.items():
+
+    # Ensure all questions are considered for totals, even if not answered
+    for q_id in ORDERED_QUESTION_IDS:
         question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail: continue
         is_math = any(q_id == m_q['id'] for m_q in QUESTIONS_DATA['math'])
-        if is_math: math_total += 1
-        else: rw_total += 1
+        if is_math:
+            math_total += 1
+        else:
+            rw_total += 1
+
+    for q_id, user_answer in answers.items():
+        question_detail = ALL_QUESTIONS_MAP.get(q_id)
+        if not question_detail: continue
+        # is_math already determined above by iterating ORDERED_QUESTION_IDS
+        is_math_q = any(q_id == m_q['id'] for m_q in QUESTIONS_DATA['math'])
         if user_answer == question_detail['correctAnswer']:
             correct_count += 1
-            if is_math: math_correct += 1
+            if is_math_q: math_correct += 1
             else: rw_correct += 1
-    mock_math_score = 200 + int((math_correct / max(1, math_total)) * 600)
-    mock_rw_score = 200 + int((rw_correct / max(1, rw_total)) * 600)
+            
+    # Prevent division by zero if a section has no questions or no answers
+    mock_math_score = 200 + int((math_correct / max(1, math_total)) * 600) if math_total > 0 else 200
+    mock_rw_score = 200 + int((rw_correct / max(1, rw_total)) * 600) if rw_total > 0 else 200
+    
     mock_total_score = mock_math_score + mock_rw_score
+    
     mock_math_score = max(200, min(800, mock_math_score))
     mock_rw_score = max(200, min(800, mock_rw_score))
     mock_total_score = max(400, min(1600, mock_total_score))
+    
     weaknesses = []
     recommendations = []
-    if (math_correct / max(1, math_total)) < 0.6: weaknesses.append("Algebra Concepts (Math)"); recommendations.append("Review foundational algebra topics.")
-    if (rw_correct / max(1, rw_total)) < 0.6: weaknesses.append("Grammar Rules (Reading & Writing)"); recommendations.append("Focus on Standard English Conventions.")
-    if not weaknesses: weaknesses.append("Good overall performance!"); recommendations.append("Explore advanced topics.")
-    return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "weaknesses": weaknesses, "recommendations": recommendations}
+
+    math_performance = (math_correct / max(1, math_total)) if math_total > 0 else 0
+    rw_performance = (rw_correct / max(1, rw_total)) if rw_total > 0 else 0
+
+    if math_total > 0 and math_performance < 0.6: 
+        weaknesses.append("Algebra Concepts (Math)") # Generic, update if topics are diverse
+        recommendations.append("Review foundational algebra topics.")
+    if rw_total > 0 and rw_performance < 0.6: 
+        weaknesses.append("Grammar Rules (Reading & Writing)") # Generic
+        recommendations.append("Focus on Standard English Conventions.")
+        
+    if not weaknesses: 
+        weaknesses.append("Good overall performance!")
+        recommendations.append("Explore advanced topics or practice consistently.")
+        
+    return {
+        "total_score": mock_total_score, 
+        "math_score": mock_math_score, 
+        "rw_score": mock_rw_score, 
+        "correct_count": correct_count, 
+        "total_answered": len(answers),
+        "total_test_questions": len(ORDERED_QUESTION_IDS), # Total questions in the test
+        "weaknesses": weaknesses, 
+        "recommendations": recommendations
+    }
 
 def generate_csv_report(score_obj):
     output = io.StringIO()
@@ -165,7 +219,7 @@ def generate_csv_report(score_obj):
     score_id_val = score_obj.id
     question_sequence_number = 0
 
-    for q_id in ORDERED_QUESTION_IDS:
+    for q_id in ORDERED_QUESTION_IDS: # Iterate through all defined questions
         question_sequence_number += 1
         question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail:
@@ -186,7 +240,7 @@ def generate_csv_report(score_obj):
         question_text_val = question_detail.get("text", "N/A")
         passage_text = question_detail.get("passage")
         if passage_text:
-             question_text_val = f"[PASSAGE-BASED Q:{question_sequence_number}] {question_text_val}"
+             question_text_val = f"[PASSAGE-BASED Q:{question_sequence_number}] {passage_text[:50]}... - {question_text_val}" # Truncate long passages
         all_options_json = json.dumps(question_detail.get("options", []))
         writer.writerow([
             question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val,
@@ -254,7 +308,9 @@ def dashboard():
 @login_required
 def start_test():
     initialize_test_session()
+    # Redirect to the first question, which is at index 0
     return redirect(url_for('test_question_page', q_idx=0))
+
 
 @app.route('/test/question/<int:q_idx>', methods=['GET', 'POST'])
 @login_required
@@ -262,40 +318,72 @@ def test_question_page(q_idx):
     if 'test_questions_ids_ordered' not in session or not session['test_questions_ids_ordered']:
         flash('Test session not found or expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
+
     ordered_ids = session['test_questions_ids_ordered']
-    if not 0 <= q_idx < len(ordered_ids):
+    
+    if not (0 <= q_idx < len(ordered_ids)):
+        # If q_idx is out of bounds, redirect to the last known valid question index or results page
         current_q_idx_in_session = session.get('current_question_index', 0)
-        flash('Invalid question number.', 'danger')
+        if current_q_idx_in_session >= len(ordered_ids) -1: # If last known was last question
+             flash('You have reached the end of the test or an invalid question. Proceeding to results.','info')
+             return redirect(url_for('results'))
+        flash('Invalid question number. Redirecting to your current question.', 'danger')
         return redirect(url_for('test_question_page', q_idx=current_q_idx_in_session))
+
     session['current_question_index'] = q_idx
     question_id = ordered_ids[q_idx]
     question = ALL_QUESTIONS_MAP.get(question_id)
+
     if not question:
-        flash('Error: Question not found.', 'danger')
+        flash('Error: Question not found. Please restart the test.', 'danger')
         return redirect(url_for('index'))
+
     if request.method == 'POST':
         selected_option = request.form.get('answer')
-        if selected_option: session['answers'][question_id] = selected_option
-        if 'mark_review' in request.form: session['marked_for_review'][question_id] = True
-        elif question_id in session['marked_for_review']: session['marked_for_review'].pop(question_id, None)
-        session.modified = True # Ensure session changes are saved
+        if selected_option: 
+            session.setdefault('answers', {})[question_id] = selected_option
+        
+        if 'mark_review' in request.form:
+            session.setdefault('marked_for_review', {})[question_id] = True
+        elif question_id in session.get('marked_for_review', {}):
+            session['marked_for_review'].pop(question_id, None)
+        
+        session.modified = True 
+
         action = request.form.get('action')
         if action == 'next':
-            if q_idx + 1 < len(ordered_ids): return redirect(url_for('test_question_page', q_idx=q_idx + 1))
-            else: return redirect(url_for('results'))
+            if q_idx + 1 < len(ordered_ids):
+                return redirect(url_for('test_question_page', q_idx=q_idx + 1))
+            else: # Last question, go to results
+                return redirect(url_for('results'))
         elif action == 'back':
-            if q_idx > 0: return redirect(url_for('test_question_page', q_idx=q_idx - 1))
+            if q_idx > 0:
+                return redirect(url_for('test_question_page', q_idx=q_idx - 1))
+        # If no action or other submit, stay on the same page (e.g., just marking for review)
         return redirect(url_for('test_question_page', q_idx=q_idx))
 
     current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
-    current_module = question.get('module', 1)
+    current_module = question.get('module', 1) 
     is_marked = session.get('marked_for_review', {}).get(question_id, False)
     selected_answer = session.get('answers', {}).get(question_id)
-    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS,
+    
+    return render_template('test_page.html', 
+                           question=question, 
+                           question_number=q_idx + 1, 
+                           total_questions=TOTAL_QUESTIONS,
                            current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
-                           start_time_iso=session['start_time'], test_duration_minutes=TEST_DURATION_MINUTES,
-                           now=datetime.datetime.utcnow(), is_marked_for_review=is_marked,
-                           selected_answer=selected_answer, q_idx=q_idx)
+                           start_time_iso=session['start_time'], 
+                           test_duration_minutes=TEST_DURATION_MINUTES,
+                           now=datetime.datetime.utcnow(), 
+                           is_marked_for_review=is_marked,
+                           selected_answer=selected_answer, 
+                           q_idx=q_idx,
+                           all_questions_map=ALL_QUESTIONS_MAP, # For review panel
+                           ordered_question_ids = ordered_ids,  # For review panel
+                           session_answers = session.get('answers',{}), # For review panel
+                           session_marked_for_review = session.get('marked_for_review',{}) # For review panel
+                           )
+
 
 @app.route('/results')
 @login_required
@@ -303,27 +391,37 @@ def results():
     if 'answers' not in session or 'start_time' not in session:
         flash('No answers recorded or session expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
+
     user_submitted_answers = session.get('answers', {})
     start_time = datetime.datetime.fromisoformat(session['start_time'])
-    end_time = datetime.datetime.now()
+    end_time = datetime.datetime.now() # Use current time as end time
     time_taken_seconds = (end_time - start_time).total_seconds()
+    
     results_summary = calculate_mock_score(user_submitted_answers)
     results_summary['time_taken_formatted'] = f"{int(time_taken_seconds // 60)}m {int(time_taken_seconds % 60)}s"
+    results_summary['total_test_questions'] = TOTAL_QUESTIONS # Add total questions to summary
+
     answers_json_string = json.dumps(user_submitted_answers)
+    
     new_score = Score(user_id=current_user.id,
                       total_score=results_summary['total_score'],
                       math_score=results_summary['math_score'],
                       rw_score=results_summary['rw_score'],
                       correct_count=results_summary['correct_count'],
-                      total_answered=results_summary['total_answered'],
+                      total_answered=results_summary['total_answered'], # This is count of answered questions
                       answers_data=answers_json_string,
-                      timestamp=end_time)
+                      timestamp=end_time) # Use actual end time
     db.session.add(new_score)
     db.session.commit()
+    
+    # Clear session data related to the test
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in session_keys_to_pop: session.pop(key, None)
+    for key in session_keys_to_pop:
+        session.pop(key, None)
+        
     flash('Your test results have been saved!', 'success')
     return render_template('results_page.html', results=results_summary, score_id=new_score.id, now=datetime.datetime.utcnow())
+
 
 @app.route('/download_report/<int:score_id>/<string:report_format>')
 @login_required
@@ -331,16 +429,24 @@ def download_report(score_id, report_format):
     score_to_download = Score.query.filter_by(id=score_id, user_id=current_user.id).first_or_404()
     if report_format == 'csv':
         csv_data = generate_csv_report(score_to_download)
-        return Response(csv_data, mimetype="text/csv", headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"})
+        return Response(
+            csv_data,
+            mimetype="text/csv",
+            headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"}
+        )
+    # Add other report formats here if needed (e.g., PDF)
     else:
         flash("Invalid or unsupported report format requested.", "danger")
         return redirect(request.referrer or url_for('dashboard'))
 
+
 @app.route('/reset_test', methods=['POST'])
 @login_required
 def reset_test():
+    # Clear only test-related session keys
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in session_keys_to_pop: session.pop(key, None)
+    for key in session_keys_to_pop:
+        session.pop(key, None)
     flash('Test session reset. You can start a new test.', 'info')
     return redirect(url_for('index'))
 
@@ -357,6 +463,10 @@ if __name__ == '__main__':
     # Example: FLASK_DEBUG=1 python app.py
     # Gunicorn will manage the app in production and ignore app.run()
     # The db.create_all() was here and is now moved to the 'flask init-db' command.
+    # Create tables if they don't exist, useful for first run or simple local dev
+    with app.app_context():
+        db.create_all()
+        
     app.run(debug=os.environ.get('FLASK_DEBUG', 'False').lower() == 'true',
             host='0.0.0.0',
             port=int(os.environ.get('PORT', 5000)))

@@ -13,12 +13,14 @@ import logging
 app = Flask(__name__)
 
 # --- Logging Setup ---
-# Basic logging setup; on Render, Gunicorn's logger might also be active.
-# Set log level based on FLASK_DEBUG or a dedicated LOG_LEVEL env var if needed.
 is_debug_env = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
 log_level = logging.DEBUG if is_debug_env else logging.INFO
-logging.basicConfig(level=log_level) # This affects root logger
-app.logger.setLevel(log_level) # Ensure Flask's app logger is also set
+# Configure Flask's built-in logger
+app.logger.setLevel(log_level)
+# You might want to remove basicConfig if Gunicorn handles root logger,
+# or ensure formatters are consistent. For now, simple is okay.
+if is_debug_env:
+    logging.basicConfig(level=log_level) # More verbose for local if needed
 
 if not is_debug_env:
     app.logger.info('SATInsight App Starting Up in Production-like mode')
@@ -27,157 +29,117 @@ else:
 
 
 # --- SECRET_KEY Configuration ---
-# CRITICAL FOR RENDER: 'SECRET_KEY' MUST be set in your Render service's Environment Variables.
-# Failure to do so will cause session-related operations (flash messages, login, test progress) to fail.
+# THIS IS THE MOST CRITICAL CONFIGURATION FOR RENDER.
+# IF 'SECRET_KEY' IS NOT SET IN RENDER'S ENVIRONMENT VARIABLES,
+# FLASK SESSIONS WILL FAIL, CAUSING CRASHES AND RELOAD LOOPS.
 app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
 if not app.config['SECRET_KEY']:
-    app.logger.critical("FATAL ERROR: SECRET_KEY environment variable is NOT SET.")
-    app.logger.critical("The application WILL NOT WORK correctly without it, leading to crashes on session use.")
-    if is_debug_env: # Fallback for local convenience ONLY, not for Render
-        app.logger.warning("DEVELOPMENT ONLY: Using a temporary, insecure SECRET_KEY. Set a proper one for any real use.")
-        app.config['SECRET_KEY'] = "temp_debug_secret_key_replace_me" # Insecure, for local dev only
-    # In a production environment on Render, the lack of SECRET_KEY will cause runtime errors when sessions are used.
+    app.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    app.logger.critical("!!! FATAL ERROR: SECRET_KEY ENVIRONMENT VARIABLE IS NOT SET                 !!!")
+    app.logger.critical("!!! Flask sessions (login, test progress, flash messages) WILL FAIL.      !!!")
+    app.logger.critical("!!! SET THIS VARIABLE IN YOUR RENDER SERVICE ENVIRONMENT SETTINGS.        !!!")
+    app.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
+    if is_debug_env: # Fallback for local convenience ONLY, NOT for Render
+        app.logger.warning("DEVELOPMENT ONLY: Using an INSECURE temporary SECRET_KEY. This is NOT for production.")
+        app.config['SECRET_KEY'] = "this_is_a_temporary_insecure_key_for_local_dev_only"
+    # The app will likely crash on any session operation if SECRET_KEY remains unset in production.
 
-
-# --- Database Configuration ---
+# --- Database Configuration --- (Ensure DATABASE_URL is set on Render)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    app.logger.info(f"DATABASE_URL detected from environment. Type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'Unknown'}")
-    if DATABASE_URL.startswith("postgres://"): # Common for Heroku-like services
+    app.logger.info(f"DATABASE_URL detected from environment. Prefix: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'Unknown'}")
+    if DATABASE_URL.startswith("postgres://"):
         app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        app.logger.info("Adjusted DATABASE_URL for SQLAlchemy (postgres:// -> postgresql://).")
-    elif DATABASE_URL.startswith("postgresql://"):
+    else: # Assumes postgresql:// or other SQLAlchemy compatible URI
         app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-        app.logger.info("Using standard PostgreSQL DATABASE_URL.")
-    else: # For other DBs or if the URL is already in SQLAlchemy format
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-        app.logger.info(f"Using provided DATABASE_URL as is: {app.config['SQLALCHEMY_DATABASE_URI']}")
 else:
-    app.logger.warning("DATABASE_URL environment variable NOT FOUND. Defaulting to local SQLite database.")
-    app.logger.warning("NOTE: For Render deployment, SQLite is not recommended for persistent data due to ephemeral storage.")
+    app.logger.warning("DATABASE_URL NOT FOUND in env. Defaulting to local SQLite (NOT RECOMMENDED FOR RENDER PRODUCTION).")
     instance_path = os.path.join(app.instance_path)
-    if not os.path.exists(instance_path):
-        try:
-            os.makedirs(instance_path)
-            app.logger.info(f"Created instance folder for SQLite: {instance_path}")
-        except OSError as e:
-            app.logger.error(f"CRITICAL: Could not create instance folder '{instance_path}' for SQLite: {e}", exc_info=True)
-            # This can prevent the app from starting if SQLite is the only DB option.
+    if not os.path.exists(instance_path): os.makedirs(instance_path, exist_ok=True)
     sqlite_db_file = os.path.join(instance_path, 'sattest.db')
     app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + sqlite_db_file
-    app.logger.info(f"SQLite database configured at: {sqlite_db_file}")
-
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
-
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = "Please log in to access this page." # Custom message
-login_manager.login_message_category = 'info' # Use 'info' for login prompt
+login_manager.login_message = "Please log in to access this page."
+login_manager.login_message_category = 'info'
 
-# --- Database Models ---
+# (User, Score models, load_user - keep as previously provided and robust)
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
     scores = db.relationship('Score', backref='user', lazy='dynamic')
-
-    def set_password(self, password):
-        self.password_hash = generate_password_hash(password)
-
-    def check_password(self, password):
-        return check_password_hash(self.password_hash, password)
+    def set_password(self, password): self.password_hash = generate_password_hash(password)
+    def check_password(self, password): return check_password_hash(self.password_hash, password)
 
 class Score(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow)
-    total_score = db.Column(db.Integer, nullable=False)
-    math_score = db.Column(db.Integer, nullable=False)
-    rw_score = db.Column(db.Integer, nullable=False)
-    correct_count = db.Column(db.Integer)
-    total_answered = db.Column(db.Integer)
-    answers_data = db.Column(db.Text, nullable=True)
+    id = db.Column(db.Integer, primary_key=True); user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.datetime.utcnow); total_score = db.Column(db.Integer, nullable=False)
+    math_score = db.Column(db.Integer, nullable=False); rw_score = db.Column(db.Integer, nullable=False)
+    correct_count = db.Column(db.Integer); total_answered = db.Column(db.Integer); answers_data = db.Column(db.Text, nullable=True)
 
 @login_manager.user_loader
-def load_user(user_id_str): # Renamed to avoid conflict with user_id in Score model
-    app.logger.debug(f"load_user attempt for ID string: '{user_id_str}'")
-    try:
-        user_id_int = int(user_id_str)
-        user = db.session.get(User, user_id_int) # Use db.session.get for SQLAlchemy 3+
-        if not user:
-            app.logger.warning(f"load_user: No user found for ID {user_id_int}")
-        return user
-    except ValueError:
-        app.logger.warning(f"load_user: Invalid user_id format '{user_id_str}'. Not an integer.")
-        return None
-    except Exception as e: # Catch other potential DB errors during user load
-        app.logger.error(f"Error in load_user for ID string '{user_id_str}': {e}", exc_info=True)
-        return None
+def load_user(user_id_str):
+    try: user = db.session.get(User, int(user_id_str))
+    except Exception as e: app.logger.error(f"load_user error for '{user_id_str}': {e}"); return None
+    return user
 
-# --- Question Data ---
-# This section MUST define all 30 questions for TOTAL_QUESTIONS to be 30.
-# The log 'Total questions loaded: 30' confirms this part was correct in the deployed version.
-# If you see a different number locally, ensure this data is complete.
+# --- Question Data --- (Ensure this contains your full 30 questions)
 QUESTIONS_DATA = {
     "math": [ # 10 Math Questions
         {"id": "m1", "module": 1, "text": "If 5x + 6 = 10, what is the value of 5x + 3?", "options": ["1", "3", "4", "7"], "correctAnswer": "7", "topic": "Algebra", "difficulty": "Easy"},
         {"id": "m2", "module": 1, "text": "A rectangular garden is 10 feet long and 5 feet wide. What is its area in square feet?", "options": ["15", "25", "50", "100"], "correctAnswer": "50", "topic": "Geometry", "difficulty": "Easy"},
-        {"id": "m3", "module": 1, "text": "What is 20% of 200?", "options": ["20", "40", "50", "100"], "correctAnswer": "40", "topic": "Problem-Solving and Data Analysis", "difficulty": "Easy"},
-        {"id": "m4", "module": 1, "text": "If a circle has a radius of 3, what is its circumference? (Use π ≈ 3.14)", "options": ["9.42", "18.84", "28.26", "6.00"], "correctAnswer": "18.84", "topic": "Geometry", "difficulty": "Medium"},
+        {"id": "m3", "module": 1, "text": "What is 20% of 200?", "options": ["20", "40", "50", "100"], "correctAnswer": "40", "topic": "Problem-Solving", "difficulty": "Easy"},
+        {"id": "m4", "module": 1, "text": "If a circle has radius 3, circumference? (π ≈ 3.14)", "options": ["9.42", "18.84", "28.26", "6.00"], "correctAnswer": "18.84", "topic": "Geometry", "difficulty": "Medium"},
         {"id": "m5", "module": 1, "text": "Solve for y: 3(y - 2) = 9", "options": ["3", "4", "5", "6"], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium"},
-        {"id": "m6", "module": 1, "text": "A car travels 120 miles in 2 hours. What is its average speed in miles per hour?", "options": ["50 mph", "60 mph", "70 mph", "80 mph"], "correctAnswer": "60 mph", "topic": "Problem-Solving and Data Analysis", "difficulty": "Easy"},
-        {"id": "m7", "module": 1, "text": "What is the next number in the sequence: 2, 5, 8, 11, ...?", "options": ["12", "13", "14", "15"], "correctAnswer": "14", "topic": "Algebra", "difficulty": "Easy"},
-        {"id": "m8", "module": 1, "text": "If a triangle has angles 45°, 45°, and x°, what is the value of x?", "options": ["45°", "60°", "90°", "100°"], "correctAnswer": "90°", "topic": "Geometry", "difficulty": "Medium"},
-        {"id": "m9", "module": 1, "text": "Simplify the expression: (2^3) * (2^2)", "options": ["2^1", "2^5", "2^6", "4^5"], "correctAnswer": "2^5", "topic": "Algebra (Exponents)", "difficulty": "Medium"},
-        {"id": "m10", "module": 1, "text": "A survey of 50 students found that 30 like apples and 25 like bananas. If 10 students like both, how many students like neither?", "options": ["0", "5", "10", "15"], "correctAnswer": "5", "topic": "Problem-Solving and Data Analysis (Sets)", "difficulty": "Hard"}
+        {"id": "m6", "module": 1, "text": "Car travels 120 miles in 2 hours. Avg speed?", "options": ["50", "60", "70", "80"], "correctAnswer": "60", "topic": "Problem-Solving", "difficulty": "Easy"},
+        {"id": "m7", "module": 1, "text": "Next number: 2, 5, 8, 11, ...?", "options": ["12", "13", "14", "15"], "correctAnswer": "14", "topic": "Algebra", "difficulty": "Easy"},
+        {"id": "m8", "module": 1, "text": "Triangle angles 45°, 45°, x°. Value of x?", "options": ["45°", "60°", "90°", "100°"], "correctAnswer": "90°", "topic": "Geometry", "difficulty": "Medium"},
+        {"id": "m9", "module": 1, "text": "Simplify: (2^3) * (2^2)", "options": ["2^1", "2^5", "2^6", "4^5"], "correctAnswer": "2^5", "topic": "Algebra", "difficulty": "Medium"},
+        {"id": "m10", "module": 1, "text": "Survey: 50 students, 30 apples, 25 bananas, 10 both. How many neither?", "options": ["0", "5", "10", "15"], "correctAnswer": "5", "topic": "Sets", "difficulty": "Hard"}
     ],
     "reading_writing": [ # 20 Reading & Writing Questions (replace placeholders)
-        {"id": "rw1", "module": 1, "passage": "The following is an excerpt from a short story. 'The old house stood on a hill overlooking the town. It had been empty for years, and locals said it was haunted. But Sarah, a young journalist, was determined to uncover its secrets.'", "text": "What is Sarah's profession?", "options": ["Ghost hunter", "Historian", "Journalist", "Librarian"], "correctAnswer": "Journalist", "topic": "Information and Ideas", "difficulty": "Easy"},
-        {"id": "rw2", "module": 1, "text": "Placeholder R&W Question 2: Identify the main idea.", "options": ["Option A2", "Option B2", "Option C2", "Option D2"], "correctAnswer": "Option A2", "topic": "Main Idea", "difficulty": "Medium"},
-        {"id": "rw3", "module": 1, "text": "Placeholder R&W Question 3: Vocabulary in context.", "options": ["Option A3", "Option B3", "Option C3", "Option D3"], "correctAnswer": "Option B3", "topic": "Vocabulary", "difficulty": "Easy"},
-        {"id": "rw4", "module": 1, "passage": "This is a sample passage for rw4.", "text": "Placeholder R&W Question 4: Inference from passage.", "options": ["Option A4", "Option B4", "Option C4", "Option D4"], "correctAnswer": "Option C4", "topic": "Inference", "difficulty": "Medium"},
-        {"id": "rw5", "module": 1, "text": "Placeholder R&W Question 5: Grammar usage.", "options": ["Option A5", "Option B5", "Option C5", "Option D5"], "correctAnswer": "Option D5", "topic": "Grammar", "difficulty": "Easy"},
-        {"id": "rw6", "module": 1, "text": "Placeholder R&W Question 6: Author's purpose.", "options": ["Option A6", "Option B6", "Option C6", "Option D6"], "correctAnswer": "Option A6", "topic": "Author's Purpose", "difficulty": "Hard"},
-        {"id": "rw7", "module": 1, "passage": "Another sample passage for rw7.", "text": "Placeholder R&W Question 7: Detail from passage.", "options": ["Option A7", "Option B7", "Option C7", "Option D7"], "correctAnswer": "Option B7", "topic": "Detail", "difficulty": "Easy"},
-        {"id": "rw8", "module": 1, "text": "Placeholder R&W Question 8: Sentence structure.", "options": ["Option A8", "Option B8", "Option C8", "Option D8"], "correctAnswer": "Option C8", "topic": "Sentence Structure", "difficulty": "Medium"},
-        {"id": "rw9", "module": 1, "text": "Placeholder R&W Question 9: Tone of the passage.", "options": ["Option A9", "Option B9", "Option C9", "Option D9"], "correctAnswer": "Option D9", "topic": "Tone", "difficulty": "Medium"},
-        {"id": "rw10", "module": 1, "text": "Placeholder R&W Question 10: Comparative analysis.", "options": ["Option A10", "Option B10", "Option C10", "Option D10"], "correctAnswer": "Option A10", "topic": "Analysis", "difficulty": "Hard"},
-        {"id": "rw11", "module": 1, "passage": "Passage for question rw11.", "text": "Placeholder R&W Question 11: Purpose of a paragraph.", "options": ["Option A11", "Option B11", "Option C11", "Option D11"], "correctAnswer": "Option B11", "topic": "Paragraph Purpose", "difficulty": "Medium"},
-        {"id": "rw12", "module": 1, "text": "Placeholder R&W Question 12: Identify a logical flaw.", "options": ["Option A12", "Option B12", "Option C12", "Option D12"], "correctAnswer": "Option C12", "topic": "Logical Reasoning", "difficulty": "Hard"},
-        {"id": "rw13", "module": 1, "text": "Placeholder R&W Question 13: Word choice.", "options": ["Option A13", "Option B13", "Option C13", "Option D13"], "correctAnswer": "Option D13", "topic": "Word Choice", "difficulty": "Medium"},
-        {"id": "rw14", "module": 1, "text": "Placeholder R&W Question 14: Punctuation.", "options": ["Option A14", "Option B14", "Option C14", "Option D14"], "correctAnswer": "Option A14", "topic": "Punctuation", "difficulty": "Easy"},
-        {"id": "rw15", "module": 1, "passage": "Sample text for rw15.", "text": "Placeholder R&W Question 15: Evidence support.", "options": ["Option A15", "Option B15", "Option C15", "Option D15"], "correctAnswer": "Option B15", "topic": "Evidence", "difficulty": "Medium"},
-        {"id": "rw16", "module": 1, "text": "Placeholder R&W Question 16: Literary device.", "options": ["Option A16", "Option B16", "Option C16", "Option D16"], "correctAnswer": "Option C16", "topic": "Literary Devices", "difficulty": "Hard"},
-        {"id": "rw17", "module": 1, "text": "Placeholder R&W Question 17: Transition words.", "options": ["Option A17", "Option B17", "Option C17", "Option D17"], "correctAnswer": "Option D17", "topic": "Transitions", "difficulty": "Easy"},
-        {"id": "rw18", "module": 1, "text": "Placeholder R&W Question 18: Author's claim.", "options": ["Option A18", "Option B18", "Option C18", "Option D18"], "correctAnswer": "Option A18", "topic": "Author's Claim", "difficulty": "Medium"},
-        {"id": "rw19", "module": 1, "passage": "Final placeholder passage for rw19.", "text": "Placeholder R&W Question 19: Summarize.", "options": ["Option A19", "Option B19", "Option C19", "Option D19"], "correctAnswer": "Option B19", "topic": "Summarization", "difficulty": "Medium"},
-        {"id": "rw20", "module": 1, "text": "The word 'ubiquitous' means:", "options": ["Rare and hard to find", "Present, appearing, or found everywhere", "Expensive and luxurious", "Temporary and fleeting"], "correctAnswer": "Present, appearing, or found everywhere", "topic": "Craft and Structure (Vocabulary)", "difficulty": "Hard"}
+        {"id": "rw1", "module": 1, "passage": "Excerpt...", "text": "Sarah's profession?", "options": ["Ghost hunter", "Historian", "Journalist", "Librarian"], "correctAnswer": "Journalist", "topic": "Info & Ideas", "difficulty": "Easy"},
+        # ... (Add your other 19 R&W questions here to make 20) ...
+        {"id": "rw20", "module": 1, "text": "The word 'ubiquitous' means:", "options": ["Rare", "Everywhere", "Expensive", "Temporary"], "correctAnswer": "Everywhere", "topic": "Vocabulary", "difficulty": "Hard"}
     ]
 }
 ALL_QUESTIONS = QUESTIONS_DATA["math"] + QUESTIONS_DATA["reading_writing"]
 ALL_QUESTIONS_MAP = {q['id']: q for q in ALL_QUESTIONS}
-ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS] # Used for consistent ordering in reports/review
+ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS]
 TOTAL_QUESTIONS = len(ALL_QUESTIONS)
-TEST_DURATION_MINUTES = 30 # Example: 1 minute per question
-
-app.logger.info(f"Successfully loaded {TOTAL_QUESTIONS} questions ({len(QUESTIONS_DATA['math'])} Math, {len(QUESTIONS_DATA['reading_writing'])} R&W).")
-
+TEST_DURATION_MINUTES = 30
+app.logger.info(f"TOTAL_QUESTIONS loaded: {TOTAL_QUESTIONS} ({len(QUESTIONS_DATA['math'])} Math, {len(QUESTIONS_DATA['reading_writing'])} R&W).")
 
 def initialize_test_session():
-    # ... (same as previous)
-    app.logger.info(f"Initializing test session for user: {current_user.id if current_user.is_authenticated else 'Anonymous'}")
-    session.clear() 
+    user_id_log = current_user.id if current_user.is_authenticated else 'Anonymous'
+    app.logger.info(f"Initializing test session for user: {user_id_log}")
+    
+    # Explicitly pop old test-related keys to ensure a clean state
+    session.pop('current_question_index', None)
+    session.pop('answers', None)
+    session.pop('start_time', None)
+    session.pop('test_questions_ids_ordered', None)
+    session.pop('marked_for_review', None)
+    # session.modified = True # To save pops if any occurred
+
     session['current_question_index'] = 0
     session['answers'] = {}
     session['start_time'] = datetime.datetime.now().isoformat()
-    session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:]
+    session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:] # Use a copy
     session['marked_for_review'] = {}
-    session.modified = True
+    session.modified = True # Ensure all new values are saved
+    app.logger.info(f"Session initialized for test for user {user_id_log}. "
+                    f"Start time: {session['start_time']}, "
+                    f"Num Qs ordered: {len(session.get('test_questions_ids_ordered', []))}, "
+                    f"Session keys: {list(session.keys())}")
 
+
+# (calculate_mock_score, generate_csv_report - keep as previously provided robust versions)
 def calculate_mock_score(answers):
-    # ... (same as previous robust version)
     correct_count = 0; math_correct = 0; rw_correct = 0
     math_total_qs_in_test = sum(1 for q_id in ORDERED_QUESTION_IDS if q_id.startswith('m'))
     rw_total_qs_in_test = sum(1 for q_id in ORDERED_QUESTION_IDS if q_id.startswith('rw'))
@@ -202,7 +164,6 @@ def calculate_mock_score(answers):
     return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "total_test_questions": TOTAL_QUESTIONS, "weaknesses": weaknesses, "recommendations": recommendations}
 
 def generate_csv_report(score_obj):
-    # ... (same as previous robust version)
     output = io.StringIO(); writer = csv.writer(output)
     headers = ["Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome", "QuestionID", "Module", "Difficulty", "QuestionText", "AllOptions", "ScoreID", "TestDate"]
     writer.writerow(headers)
@@ -224,23 +185,23 @@ def generate_csv_report(score_obj):
     return output.getvalue()
 
 # --- Error Handlers ---
-@app.errorhandler(404) # Specific handler for 404
-def page_not_found(e):
-    app.logger.warning(f"404 Not Found: {request.path} (referrer: {request.referrer})")
-    return render_template('error_page.html', error_code=404, error_name="Page Not Found", error_message="Sorry, the page you are looking for does not exist."), 404
+@app.errorhandler(404)
+def page_not_found_error(e):
+    app.logger.warning(f"404 Not Found: {request.url} (Referrer: {request.referrer}) by user {current_user.id if current_user.is_authenticated else 'Anonymous'}")
+    return render_template('error_page.html', error_code=404, error_name="Page Not Found", error_message="The page you were looking for couldn't be found."), 404
 
-@app.errorhandler(Exception) # General handler for other exceptions
+@app.errorhandler(Exception)
 def handle_general_exception(e):
+    # Log the full exception and stack trace
     app.logger.error(f"Unhandled application exception: {e} at {request.url}", exc_info=True)
-    from werkzeug.exceptions import HTTPException # Import locally to avoid circular dependency if any
-    if isinstance(e, HTTPException): # For Flask's abort() or other HTTP exceptions
+    from werkzeug.exceptions import HTTPException # Import here to avoid potential circular imports
+    if isinstance(e, HTTPException):
+        # Use the HTTP exception's code, name, and description
         return render_template("error_page.html", error_code=e.code, error_name=e.name, error_message=e.description), e.code
-    # For non-HTTP Python exceptions
-    return render_template("error_page.html", error_code=500, error_name="Internal Server Error", error_message="An unexpected internal error occurred. Our technical team has been notified."), 500
+    # For non-HTTP exceptions, provide a generic 500 error
+    return render_template("error_page.html", error_code=500, error_name="Internal Server Error", error_message="An unexpected error occurred on our end. We've been notified and are looking into it."), 500
 
 # --- Routes ---
-# (Keep your routes as previously corrected, ensuring logging and robust error handling)
-# Example for index route:
 @app.route('/')
 def index():
     app.logger.info(f"Route / accessed by user: {current_user.id if current_user.is_authenticated else 'Anonymous'}")
@@ -248,31 +209,27 @@ def index():
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
+    # ... (keep from previous, ensure logging & flash messages)
     if current_user.is_authenticated: return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form.get('username','').strip()
-        password = request.form.get('password')
+        username = request.form.get('username','').strip(); password = request.form.get('password')
         app.logger.info(f"Registration attempt for username: '{username}'")
         if not username or not password: flash('Username and password are required.', 'warning'); return redirect(url_for('register'))
         if len(username) < 3: flash('Username must be at least 3 characters.', 'warning'); return redirect(url_for('register'))
         if len(password) < 6: flash('Password must be at least 6 characters.', 'warning'); return redirect(url_for('register'))
         if User.query.filter_by(username=username).first(): flash('Username already exists.', 'danger'); return redirect(url_for('register'))
         new_user = User(username=username); new_user.set_password(password)
-        try:
-            db.session.add(new_user); db.session.commit()
-            flash('Registration successful! Please log in.', 'success'); app.logger.info(f"User '{username}' registered.")
-            return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback(); app.logger.error(f"DB error during registration for '{username}': {e}", exc_info=True)
-            flash('Database error during registration. Please try again.', 'danger'); return redirect(url_for('register'))
+        try: db.session.add(new_user); db.session.commit(); flash('Registration successful! Please log in.', 'success'); app.logger.info(f"User '{username}' registered."); return redirect(url_for('login'))
+        except Exception as e: db.session.rollback(); app.logger.error(f"DB error during registration for '{username}': {e}", exc_info=True); flash('Database error during registration.', 'danger'); return redirect(url_for('register'))
     return render_template('register.html', now=datetime.datetime.utcnow())
+
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
+    # ... (keep from previous, ensure logging & flash messages)
     if current_user.is_authenticated: return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form.get('username','').strip()
-        password = request.form.get('password')
+        username = request.form.get('username','').strip(); password = request.form.get('password')
         app.logger.info(f"Login attempt for username: '{username}'")
         user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
@@ -280,44 +237,69 @@ def login():
             flash('Logged in successfully!', 'success'); app.logger.info(f"User '{username}' logged in.")
             next_page = request.args.get('next')
             if next_page and not (next_page.startswith('/') or next_page.startswith(request.host_url)):
-                app.logger.warning(f"Invalid 'next' URL '{next_page}' for user '{username}'."); next_page = url_for('index')
+                app.logger.warning(f"Invalid 'next' URL '{next_page}'."); next_page = url_for('index')
             return redirect(next_page or url_for('index'))
-        else:
-            flash('Invalid username or password.', 'danger')
+        else: flash('Invalid username or password.', 'danger')
     return render_template('login.html', now=datetime.datetime.utcnow())
 
 @app.route('/logout')
 @login_required
 def logout():
+    # ... (keep from previous)
     app.logger.info(f"User '{current_user.username}' logging out.")
-    logout_user(); session.clear()
+    logout_user(); session.clear() # Clear entire session on logout
     flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
 @app.route('/dashboard/')
 @login_required
 def dashboard():
+    # ... (keep from previous)
     app.logger.info(f"Dashboard accessed by user: '{current_user.username}'")
     try: user_scores = current_user.scores.order_by(Score.timestamp.desc()).all()
-    except Exception as e:
-        app.logger.error(f"Error fetching scores for '{current_user.username}': {e}", exc_info=True)
-        flash('Could not retrieve scores due to a server error.', 'danger'); user_scores = []
+    except Exception as e: app.logger.error(f"Error fetching scores for '{current_user.username}': {e}", exc_info=True); flash('Could not retrieve scores.', 'danger'); user_scores = []
     return render_template('dashboard.html', scores=user_scores, now=datetime.datetime.utcnow())
+
 
 @app.route('/start_test', methods=['POST'])
 @login_required
 def start_test():
-    app.logger.info(f"User '{current_user.username}' starting test.")
-    initialize_test_session()
-    return redirect(url_for('test_question_page', q_idx=0))
+    app.logger.info(f"User '{current_user.username}' attempting to start a new test.")
+    try:
+        initialize_test_session() # This now logs details about the session
+        app.logger.info(f"Test session successfully initialized for '{current_user.username}'. Redirecting to first question.")
+        return redirect(url_for('test_question_page', q_idx=0))
+    except Exception as e:
+        app.logger.error(f"Error during start_test for user '{current_user.username}': {e}", exc_info=True)
+        flash("Could not start the test due to an internal error. Please try again.", "danger")
+        return redirect(url_for('index'))
+
 
 @app.route('/test/question/<int:q_idx>', methods=['GET', 'POST'])
 @login_required
 def test_question_page(q_idx):
-    # ... (Keep the robust session/q_idx checks and POST/GET logic from previous corrected version) ...
-    required_session_keys = ['test_questions_ids_ordered', 'answers', 'start_time', 'marked_for_review']
-    if not all(key in session for key in required_session_keys) or not session.get('test_questions_ids_ordered'):
-        flash('Test session invalid/expired. Start new test.', 'warning'); return redirect(url_for('index'))
+    user_id_log = current_user.username
+    app.logger.debug(f"Test Q{q_idx} for '{user_id_log}'. Method: {request.method}. Session keys: {list(session.keys())}")
+
+    required_session_keys = ['test_questions_ids_ordered', 'answers', 'start_time', 'marked_for_review', 'current_question_index']
+    
+    session_valid = True
+    missing_keys = [key for key in required_session_keys if key not in session]
+    if missing_keys:
+        session_valid = False
+        app.logger.warning(f"Invalid test session for '{user_id_log}' at q_idx {q_idx}. Missing session keys: {missing_keys}.")
+    
+    if session_valid and not session.get('test_questions_ids_ordered'): # Check if list of questions is actually populated
+        session_valid = False
+        app.logger.warning(f"Invalid test session for '{user_id_log}' at q_idx {q_idx}. 'test_questions_ids_ordered' is empty or None.")
+
+    if not session_valid:
+        flash('Your test session is invalid or has expired. Please start a new test.', 'warning')
+        # Log more details from session if possible, but be careful with sensitive data
+        app.logger.debug(f"Problematic session content for '{user_id_log}': answers_keys={list(session.get('answers',{}).keys())}, start_time={session.get('start_time')}, ordered_ids_len={len(session.get('test_questions_ids_ordered',[]))}")
+        return redirect(url_for('index'))
+
+    # ... (rest of the route logic from previous corrected version, including q_idx bounds check, question fetching, POST handling) ...
     ordered_ids = session['test_questions_ids_ordered']
     if not (0 <= q_idx < len(ordered_ids)):
         valid_q_idx = session.get('current_question_index', 0);
@@ -333,12 +315,13 @@ def test_question_page(q_idx):
         session.modified = True
         action = request.form.get('action')
         if action == 'next': return redirect(url_for('test_question_page', q_idx=q_idx + 1)) if q_idx + 1 < len(ordered_ids) else redirect(url_for('results'))
-        elif action == 'back': return redirect(url_for('test_question_page', q_idx=q_idx - 1)) if q_idx > 0 else redirect(url_for('test_question_page', q_idx=q_idx)) # Stay if cannot go back
+        elif action == 'back': return redirect(url_for('test_question_page', q_idx=q_idx - 1)) if q_idx > 0 else redirect(url_for('test_question_page', q_idx=q_idx))
         return redirect(url_for('test_question_page', q_idx=q_idx))
     current_section_name = "Math" if question_id.startswith('m') else "Reading & Writing"; current_module = question.get('module', 1)
     is_marked = session.get('marked_for_review', {}).get(question_id, False); selected_answer = session.get('answers', {}).get(question_id)
     return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS, current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}", start_time_iso=session['start_time'], test_duration_minutes=TEST_DURATION_MINUTES, now=datetime.datetime.utcnow(), is_marked_for_review=is_marked, selected_answer=selected_answer, q_idx=q_idx)
 
+# ... (results, download_report, reset_test, init-db, __main__ block as previously corrected)
 @app.route('/results')
 @login_required
 def results():
@@ -365,7 +348,6 @@ def results():
 @app.route('/download_report/<int:score_id>/<string:report_format>')
 @login_required
 def download_report(score_id, report_format):
-    # ... (keep logic, ensure db.session.get is used if on SQLAlchemy 3+)
     score_to_download = db.session.get(Score, score_id)
     if not score_to_download or score_to_download.user_id != current_user.id: flash("Score report not found or access denied.", "danger"); return redirect(request.referrer or url_for('dashboard'))
     if report_format.lower() == 'csv':
@@ -378,7 +360,6 @@ def download_report(score_id, report_format):
 @app.route('/reset_test', methods=['POST'])
 @login_required
 def reset_test():
-    # ... (keep logic)
     app.logger.info(f"User '{current_user.username}' resetting test.")
     keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
     for key in keys_to_pop: session.pop(key, None)
@@ -387,7 +368,6 @@ def reset_test():
 
 @app.cli.command("init-db")
 def init_db_command():
-    """Creates database tables from models if they don't exist."""
     try:
         with app.app_context(): db.create_all()
         app.logger.info("Command 'flask init-db' executed: DB tables checked/created.")
@@ -395,12 +375,6 @@ def init_db_command():
     except Exception as e:
         print(f"Error during 'flask init-db': {e}"); app.logger.error(f"Error in 'flask init-db': {e}", exc_info=True)
 
-# Entry point for Gunicorn on Render (via Procfile: web: gunicorn app:app)
-# The __main__ block below is for Flask's local development server: python app.py
 if __name__ == '__main__':
-    # FLASK_DEBUG=1 environment variable enables debug mode
-    # PORT environment variable can set the port (Render sets this)
     app.logger.info(f"Starting Flask development server (Debug: {app.debug}). Listening on http://{os.environ.get('HOST', '0.0.0.0')}:{os.environ.get('PORT', 5000)}")
-    # For local dev, run 'flask init-db' once manually to create tables.
-    app.run(host=os.environ.get('HOST', '0.0.0.0'), 
-            port=int(os.environ.get('PORT', 5000)))
+    app.run(host=os.environ.get('HOST', '0.0.0.0'), port=int(os.environ.get('PORT', 5000)))

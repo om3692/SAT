@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+
+{% block title %}Start SAT Diagnostic - SATInsight{% endblock %}
+
+{% block content %}
+<div class="bg-white shadow-xl rounded-2xl p-6 sm:p-10 max-w-2xl mx-auto text-center transform hover:scale-105 transition-transform duration-300">
+    <div class="mb-6">
+        <svg class="w-20 h-20 text-indigo-500 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path></svg>
+    </div>
+    <h1 class="text-3xl sm:text-4xl font-bold text-gray-800 mb-4">Welcome to your SAT Diagnostic!</h1>
+    <p class="text-gray-600 text-lg mb-3">
+        This short test will help you understand your current standing and identify areas for improvement on the Digital SAT.
+    </p>
+    <div class="my-6 space-y-3 text-left text-gray-700 bg-indigo-50 p-4 rounded-lg">
+        <p><strong class="font-semibold">Format:</strong> {{ total_questions }} questions (Math and Reading & Writing).</p>
+        <p><strong class="font-semibold">Duration:</strong> Approximately {{ duration }} minutes.</p>
+        <p><strong class="font-semibold">Sections:</strong> One Math section and one combined Reading & Writing section.</p>
+        <p><strong class="font-semibold">Focus:</strong> One question per page for better concentration.</p>
+    </div>
+    <p class="text-gray-600 text-lg mb-8">
+        Find a quiet place, get ready, and let's begin!
+    </p>
+    <form action="{{ url_for('start_test') }}" method="POST">
+        <button type="submit"
+                class="w-full sm:w-auto bg-gradient-to-r from-blue-600 to-indigo-700 hover:from-blue-700 hover:to-indigo-800 text-white font-semibold py-3 px-10 rounded-lg shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-150 text-xl">
+            Start Diagnostic Test
+        </button>
+    </form>
+</div>
+{% endblock %}

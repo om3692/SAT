@@ -1,0 +1,501 @@
+{% extends "layout.html" %}
+
+{% block title %}Question {{ question_number }} - SATInsight{% endblock %}
+
+{% block body_class %}on-test-page bg-gray-100{% endblock %} {# Override body background for test page #}
+
+{% block head_extra %}
+{# Removed Font Awesome link: <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> #}
+<style>
+    /* Hide main header when on test page, as test page has its own header */
+    .on-test-page > header { /* Direct child header of body.on-test-page */
+        display: none;
+    }
+    .test-container {
+        max-width: 1280px; /* Adjust as needed */
+        margin: 0 auto;
+        height: calc(100vh - 0px); /* Full viewport height minus potential top/bottom bars */
+        display: flex;
+        flex-direction: column;
+    }
+    .test-header {
+        background-color: #ffffff; /* White background for test header */
+        border-bottom: 1px solid #e5e7eb; /* gray-200 */
+        padding: 0.75rem 1.5rem; /* py-3 px-6 */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        top:0;
+        z-index: 40; /* Below main site header if it were visible */
+    }
+    .test-main-content {
+        flex-grow: 1;
+        display: flex;
+        overflow-y: auto; /* Allows content to scroll if it overflows */
+        padding: 1.5rem; /* p-6 */
+    }
+    .passage-column {
+        width: 50%;
+        padding-right: 1.5rem; /* pr-6 */
+        border-right: 1px solid #d1d5db; /* gray-300 */
+        overflow-y: auto;
+        max-height: calc(100vh - 200px); /* Adjust based on header/footer heights */
+        transition: width 0.3s ease, opacity 0.3s ease, padding-right 0.3s ease; /* Added for smooth hide */
+    }
+    .passage-column.hidden { /* Style for hidden passage */
+        width: 0;
+        opacity: 0;
+        padding-right: 0;
+        border-right: none;
+        overflow: hidden;
+    }
+    .question-column {
+        width: 50%;
+        padding-left: 1.5rem; /* pl-6 */
+        overflow-y: auto;
+        max-height: calc(100vh - 200px); /* Adjust based on header/footer heights */
+        transition: width 0.3s ease, padding-left 0.3s ease; /* Added for smooth adjustment */
+    }
+    .question-column.full-width { /* Style for question column when passage is hidden */
+        width: 100%;
+        padding-left: 0;
+    }
+    .math-column {
+        width: 100%;
+        max-width: 800px; /* Limit width for math questions for readability */
+        margin: 0 auto;
+    }
+
+    .test-footer {
+        background-color: #ffffff;
+        border-top: 1px solid #e5e7eb; /* gray-200 */
+        padding: 0.75rem 1.5rem; /* py-3 px-6 */
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        position: sticky;
+        bottom: 0;
+        z-index: 40;
+    }
+    .progress-bar-container {
+        width: 100%;
+        background-color: #e5e7eb; /* gray-200 */
+        border-radius: 0.25rem; /* rounded */
+        height: 8px; /* h-2 */
+        margin-bottom: 0.5rem; /* mb-2 */
+    }
+    .progress-bar {
+        background-color: #4f46e5; /* indigo-600 */
+        height: 100%;
+        border-radius: 0.25rem; /* rounded */
+        transition: width 0.3s ease-in-out;
+    }
+    .option-label {
+        display: flex;
+        align-items: center;
+        padding: 0.75rem 1rem; /* py-3 px-4 */
+        border: 1px solid #d1d5db; /* gray-300 */
+        border-radius: 0.375rem; /* rounded-md */
+        cursor: pointer;
+        transition: all 0.15s ease-in-out;
+        background-color: #fff;
+    }
+    .option-label:hover {
+        border-color: #a5b4fc; /* indigo-300 */
+        background-color: #f0f2f5;
+    }
+    .option-input:checked + .option-label {
+        border-color: #4f46e5; /* indigo-600 */
+        background-color: #e0e7ff; /* indigo-100 */
+        color: #3730a3; /* indigo-800 */
+        font-weight: 600;
+    }
+    .option-input {
+        display: none; /* Hide actual radio button */
+    }
+    .option-letter {
+        width: 24px;
+        height: 24px;
+        border: 1px solid #9ca3af; /* gray-400 */
+        border-radius: 50%;
+        display: inline-flex;
+        justify-content: center;
+        align-items: center;
+        margin-right: 0.75rem; /* mr-3 */
+        font-size: 0.875rem; /* text-sm */
+        font-weight: 500;
+    }
+    .option-input:checked + .option-label .option-letter {
+        background-color: #4f46e5; /* indigo-600 */
+        border-color: #4f46e5;
+        color: white;
+    }
+    .tool-button {
+        background: none;
+        border: none;
+        color: #4b5563; /* gray-600 */
+        padding: 0.5rem;
+        border-radius: 0.25rem;
+    }
+    .tool-button:hover {
+        background-color: #f3f4f6; /* gray-100 */
+        color: #1f2937; /* gray-800 */
+    }
+    .nav-button {
+        padding: 0.5rem 1.5rem; /* py-2 px-6 */
+        border-radius: 0.375rem; /* rounded-md */
+        font-weight: 500;
+        transition: background-color 0.15s ease-in-out;
+    }
+    .nav-button-primary {
+        background-color: #4f46e5; /* indigo-600 */
+        color: white;
+    }
+    .nav-button-primary:hover {
+        background-color: #4338ca; /* indigo-700 */
+    }
+    .nav-button-secondary {
+        background-color: #e5e7eb; /* gray-200 */
+        color: #374151; /* gray-700 */
+    }
+    .nav-button-secondary:hover {
+        background-color: #d1d5db; /* gray-300 */
+    }
+
+    /* Modal Styles */
+    .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000; /* High z-index to be on top */
+        opacity: 0;
+        visibility: hidden;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
+    .modal-overlay.active {
+        opacity: 1;
+        visibility: visible;
+    }
+    .modal-content {
+        background-color: white;
+        padding: 2rem;
+        border-radius: 0.5rem; /* rounded-lg */
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        max-width: 90%;
+        max-height: 90vh;
+        overflow-y: auto;
+        position: relative;
+    }
+    .modal-close-button {
+        position: absolute;
+        top: 0.75rem; /* py-3 */
+        right: 0.75rem; /* px-3 */
+        background: none;
+        border: none;
+        font-size: 1.5rem; /* text-2xl */
+        color: #6b7280; /* gray-500 */
+        cursor: pointer;
+    }
+    .modal-close-button:hover {
+        color: #1f2937; /* gray-800 */
+    }
+    /* Basic Calculator UI */
+    .calculator { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; max-width: 250px; margin: auto; }
+    .calculator button { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 0.75rem; border-radius: 0.25rem; font-size: 1rem; cursor: pointer; }
+    .calculator button:hover { background-color: #d1d5db; }
+    .calculator .display { grid-column: 1 / -1; background-color: #f9fafb; padding: 0.5rem; text-align: right; font-size: 1.5rem; border-radius: 0.25rem; margin-bottom: 0.5rem; min-height: 2.5rem; border: 1px solid #d1d5db;}
+    .calculator .zero { grid-column: 1 / span 2; }
+    .calculator .operator { background-color: #fbbf24; /* amber-400 */ }
+    .calculator .operator:hover { background-color: #f59e0b; /* amber-500 */ }
+    .calculator .equals { background-color: #3b82f6; color: white; /* blue-500 */ }
+    .calculator .equals:hover { background-color: #2563eb; /* blue-600 */ }
+
+
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="test-container bg-gray-50"> {# Main container for the test interface #}
+    <div class="test-header">
+        <div class="text-sm font-medium text-gray-700">{{ current_section }}</div>
+        <div id="test-page-timer" class="text-lg font-semibold text-indigo-600">00:00</div>
+        <div class="flex items-center space-x-2">
+            <button id="directions-button" class="tool-button text-sm">Directions <i class="fas fa-chevron-down fa-xs ml-1"></i></button>
+            <button id="hide-passage-button" class="tool-button text-sm">Hide</button>
+            <span class="text-gray-300">|</span>
+            <button id="calculator-button" class="tool-button" title="Calculator"><i class="fas fa-calculator"></i></button>
+            <button class="tool-button" title="Annotate (Placeholder)" onclick="alert('Annotate: This feature is coming soon!')"><i class="fas fa-highlighter"></i></button>
+            <button class="tool-button" title="More Options (Placeholder)" onclick="alert('More Options: This feature is coming soon!')"><i class="fas fa-ellipsis-v"></i> More</button>
+        </div>
+    </div>
+
+    <div class="px-6 pt-2 bg-white"> {# Match header padding for alignment #}
+        <div class="progress-bar-container">
+            <div class="progress-bar" style="width: {{ (question_number / total_questions) * 100 }}%;"></div>
+        </div>
+    </div>
+
+    <div class="test-main-content">
+        {% if question.passage and 'reading' in current_section.lower() %}
+            <div id="passage-column-container" class="passage-column">
+                <h3 class="text-lg font-semibold text-gray-800 mb-3">Passage</h3>
+                <div class="prose prose-sm max-w-none text-gray-700 whitespace-pre-line leading-relaxed">
+                    {{ question.passage }}
+                </div>
+            </div>
+            <div id="question-column-container" class="question-column">
+                <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                    <div class="flex items-center justify-between mb-1">
+                        <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
+                        <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
+                            <input type="checkbox" id="mark_review_cb" name="mark_review" value="true" class="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
+                            Mark for Review <i class="far fa-bookmark ml-1"></i>
+                        </label>
+                    </div>
+                    <fieldset>
+                        <legend class="text-lg font-medium text-gray-900 mb-4 leading-snug">{{ question.text }}</legend>
+                        <div class="space-y-3">
+                            {% for option in question.options %}
+                            <div>
+                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %} required>
+                                <label for="option-{{ loop.index0 }}" class="option-label">
+                                    <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
+                                    <span>{{ option }}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                     <button type="submit" name="action" value="next" class="hidden">Next</button>
+                    <button type="submit" name="action" value="back" class="hidden">Back</button>
+                </form>
+            </div>
+        {% else %}
+            <div class="math-column">
+                 <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
+                    <input type="hidden" name="question_id" value="{{ question.id }}">
+                     <div class="flex items-center justify-between mb-1">
+                        <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
+                        <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
+                            <input type="checkbox" id="mark_review_cb" name="mark_review" value="true" class="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
+                            Mark for Review <i class="far fa-bookmark ml-1"></i>
+                        </label>
+                    </div>
+                    <fieldset>
+                        <legend class="text-lg font-medium text-gray-900 mb-4 leading-snug">{{ question.text }}</legend>
+                         <div class="space-y-3">
+                            {% for option in question.options %}
+                            <div>
+                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %} required>
+                                <label for="option-{{ loop.index0 }}" class="option-label">
+                                    <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
+                                    <span>{{ option }}</span>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </fieldset>
+                    <button type="submit" name="action" value="next" class="hidden">Next</button>
+                    <button type="submit" name="action" value="back" class="hidden">Back</button>
+                </form>
+            </div>
+        {% endif %}
+    </div>
+
+    <div class="test-footer">
+        <button onclick="document.querySelector('#question-form button[value=\'back\']').click();" 
+                class="nav-button nav-button-secondary" {% if q_idx == 0 %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
+            <i class="fas fa-chevron-left mr-1"></i> Back
+        </button>
+        <div class="text-sm font-medium text-gray-700">Question {{ question_number }} of {{ total_questions }}</div>
+        <button onclick="document.querySelector('#question-form button[value=\'next\']').click();" 
+                class="nav-button nav-button-primary">
+            Next <i class="fas fa-chevron-right ml-1"></i>
+        </button>
+    </div>
+</div>
+
+<div id="directions-modal" class="modal-overlay">
+    <div class="modal-content w-full max-w-lg">
+        <button class="modal-close-button" onclick="toggleModal('directions-modal', false)">&times;</button>
+        <h2 class="text-2xl font-semibold mb-4">Test Directions</h2>
+        <div class="prose prose-sm max-w-none">
+            <p>Welcome to the SATInsight Diagnostic Test.</p>
+            <p>This test consists of two main sections: Math and Reading & Writing.</p>
+            <p><strong>General Instructions:</strong></p>
+            <ul>
+                <li>Read each question carefully before selecting your answer.</li>
+                <li>For multiple-choice questions, select the best answer from the options provided.</li>
+                <li>You can use the "Mark for Review" option to flag questions you want to revisit.</li>
+                <li>A timer is provided at the top of the screen. Manage your time effectively.</li>
+                <li>The "Hide" button can be used to hide the passage in Reading sections for a focused view of the question.</li>
+                <li>A basic calculator tool is available for the Math section.</li>
+            </ul>
+            <p><strong>Navigating the Test:</strong></p>
+            <ul>
+                <li>Use the "Next" button to proceed to the next question.</li>
+                <li>Use the "Back" button to return to the previous question.</li>
+            </ul>
+            <p>Good luck!</p>
+        </div>
+        <div class="mt-6 text-right">
+            <button class="nav-button nav-button-primary" onclick="toggleModal('directions-modal', false)">Got it!</button>
+        </div>
+    </div>
+</div>
+
+<div id="calculator-modal" class="modal-overlay">
+    <div class="modal-content w-auto">
+        <button class="modal-close-button" onclick="toggleModal('calculator-modal', false)">&times;</button>
+        <h2 class="text-xl font-semibold mb-4 text-center">Calculator</h2>
+        <div class="calculator">
+            <div id="calc-display" class="display">0</div>
+            <button onclick="calcInput('clear')">AC</button>
+            <button onclick="calcInput('sign')">+/-</button>
+            <button onclick="calcInput('%')">%</button>
+            <button class="operator" onclick="calcInput('/')">/</button>
+            <button onclick="calcInput('7')">7</button>
+            <button onclick="calcInput('8')">8</button>
+            <button onclick="calcInput('9')">9</button>
+            <button class="operator" onclick="calcInput('*')">x</button>
+            <button onclick="calcInput('4')">4</button>
+            <button onclick="calcInput('5')">5</button>
+            <button onclick="calcInput('6')">6</button>
+            <button class="operator" onclick="calcInput('-')">-</button>
+            <button onclick="calcInput('1')">1</button>
+            <button onclick="calcInput('2')">2</button>
+            <button onclick="calcInput('3')">3</button>
+            <button class="operator" onclick="calcInput('+')">+</button>
+            <button class="zero" onclick="calcInput('0')">0</button>
+            <button onclick="calcInput('.')">.</button>
+            <button class="equals" onclick="calcInput('=')">=</button>
+        </div>
+         <p class="text-xs text-center mt-3 text-gray-500">(Note: This is a basic visual calculator. Full functionality is coming soon!)</p>
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts_extra %}
+<script>
+    // Modal toggle function
+    function toggleModal(modalId, show) {
+        const modal = document.getElementById(modalId);
+        if (modal) {
+            if (show) {
+                modal.classList.add('active');
+            } else {
+                modal.classList.remove('active');
+            }
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const testDurationSeconds = {{ test_duration_minutes * 60 }};
+        const startTimeIso = "{{ start_time_iso }}";
+        if (startTimeIso && testDurationSeconds) {
+            startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', 'question-form');
+        }
+
+        const markReviewCheckbox = document.getElementById('mark_review_cb');
+        if (markReviewCheckbox) {
+            markReviewCheckbox.addEventListener('change', function() {
+                document.getElementById('question-form').submit();
+            });
+        }
+
+        const hidePassageButton = document.getElementById('hide-passage-button');
+        const passageColumn = document.getElementById('passage-column-container');
+        const questionColumn = document.getElementById('question-column-container');
+
+        if (hidePassageButton && passageColumn && questionColumn) {
+            let isPassageHidden = localStorage.getItem('isPassageHidden') === 'true';
+            if (isPassageHidden) {
+                passageColumn.classList.add('hidden');
+                questionColumn.classList.add('full-width');
+                hidePassageButton.textContent = 'Show';
+            }
+            hidePassageButton.addEventListener('click', function() {
+                isPassageHidden = !isPassageHidden;
+                if (isPassageHidden) {
+                    passageColumn.classList.add('hidden');
+                    questionColumn.classList.add('full-width');
+                    this.textContent = 'Show';
+                } else {
+                    passageColumn.classList.remove('hidden');
+                    questionColumn.classList.remove('full-width');
+                    this.textContent = 'Hide';
+                }
+                localStorage.setItem('isPassageHidden', isPassageHidden);
+            });
+        } else if (hidePassageButton) {
+            hidePassageButton.style.display = 'none';
+        }
+
+        // Modal Triggers
+        const directionsButton = document.getElementById('directions-button');
+        if (directionsButton) {
+            directionsButton.addEventListener('click', function() { toggleModal('directions-modal', true); });
+        }
+        const calculatorButton = document.getElementById('calculator-button');
+        if (calculatorButton) {
+            calculatorButton.addEventListener('click', function() { toggleModal('calculator-modal', true); });
+        }
+
+        // Basic Calculator Logic (Visual Only, no real calculations)
+        const calcDisplay = document.getElementById('calc-display');
+        let currentCalcInput = '0';
+        let previousCalcInput = '';
+        let calcOperation = null;
+
+        window.calcInput = function(value) {
+            if (!calcDisplay) return;
+
+            if (value === 'clear') {
+                currentCalcInput = '0';
+                previousCalcInput = '';
+                calcOperation = null;
+            } else if (value === '+/-') {
+                currentCalcInput = (parseFloat(currentCalcInput) * -1).toString();
+            } else if (value === '%') {
+                currentCalcInput = (parseFloat(currentCalcInput) / 100).toString();
+            } else if (['/', '*', '-', '+'].includes(value)) {
+                // This is a very simplified logic, not a full eval
+                if (calcOperation && previousCalcInput) { // if there's a pending operation
+                     currentCalcInput = "Op"; // Placeholder for operation
+                }
+                calcOperation = value;
+                previousCalcInput = currentCalcInput;
+                currentCalcInput = '0'; // Ready for next input
+            } else if (value === '=') {
+                if (calcOperation && previousCalcInput) {
+                    // Simulate a result - not actual calculation
+                    currentCalcInput = "Result"; // Placeholder
+                    previousCalcInput = '';
+                    calcOperation = null;
+                }
+            } else if (value === '.') {
+                if (!currentCalcInput.includes('.')) {
+                    currentCalcInput += '.';
+                }
+            } else { // Number input
+                if (currentCalcInput === '0' || currentCalcInput === "Op" || currentCalcInput === "Result") {
+                    currentCalcInput = value;
+                } else {
+                    currentCalcInput += value;
+                }
+            }
+            calcDisplay.textContent = currentCalcInput.substring(0, 12); // Limit display length
+        }
+
+    });
+</script>
+{% endblock %}

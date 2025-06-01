@@ -5,7 +5,7 @@
 {% block body_class %}on-test-page bg-gray-100{% endblock %} {# Override body background for test page #}
 
 {% block head_extra %}
-{# Removed Font Awesome link: <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> #}
+<link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet"> {# Un-commented for icons #}
 <style>
     /* Hide main header when on test page, as test page has its own header */
     .on-test-page > header { /* Direct child header of body.on-test-page */
@@ -210,13 +210,24 @@
     .calculator { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; max-width: 250px; margin: auto; }
     .calculator button { background-color: #e5e7eb; border: 1px solid #d1d5db; padding: 0.75rem; border-radius: 0.25rem; font-size: 1rem; cursor: pointer; }
     .calculator button:hover { background-color: #d1d5db; }
-    .calculator .display { grid-column: 1 / -1; background-color: #f9fafb; padding: 0.5rem; text-align: right; font-size: 1.5rem; border-radius: 0.25rem; margin-bottom: 0.5rem; min-height: 2.5rem; border: 1px solid #d1d5db;}
+    .calculator .display { 
+        grid-column: 1 / -1; 
+        background-color: #f9fafb; 
+        padding: 0.5rem; 
+        text-align: right; 
+        font-size: 1.5rem; 
+        border-radius: 0.25rem; 
+        margin-bottom: 0.5rem; 
+        min-height: 2.5rem; 
+        border: 1px solid #d1d5db;
+        word-wrap: break-word;
+        overflow-wrap: break-word;
+    }
     .calculator .zero { grid-column: 1 / span 2; }
     .calculator .operator { background-color: #fbbf24; /* amber-400 */ }
     .calculator .operator:hover { background-color: #f59e0b; /* amber-500 */ }
     .calculator .equals { background-color: #3b82f6; color: white; /* blue-500 */ }
     .calculator .equals:hover { background-color: #2563eb; /* blue-600 */ }
-
 
 </style>
 {% endblock %}
@@ -265,7 +276,7 @@
                         <div class="space-y-3">
                             {% for option in question.options %}
                             <div>
-                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %} required>
+                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}> {# Removed 'required' #}
                                 <label for="option-{{ loop.index0 }}" class="option-label">
                                     <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
                                     <span>{{ option }}</span>
@@ -278,7 +289,7 @@
                     <button type="submit" name="action" value="back" class="hidden">Back</button>
                 </form>
             </div>
-        {% else %}
+        {% else %} {# For Math questions or questions without a passage #}
             <div class="math-column">
                  <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
                     <input type="hidden" name="question_id" value="{{ question.id }}">
@@ -294,7 +305,7 @@
                          <div class="space-y-3">
                             {% for option in question.options %}
                             <div>
-                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %} required>
+                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}> {# Removed 'required' #}
                                 <label for="option-{{ loop.index0 }}" class="option-label">
                                     <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
                                     <span>{{ option }}</span>
@@ -311,12 +322,12 @@
     </div>
 
     <div class="test-footer">
-        <button onclick="document.querySelector('#question-form button[value=\'back\']').click();" 
+        <button onclick="document.querySelector('#question-form button[value=\'back\']').click();"
                 class="nav-button nav-button-secondary" {% if q_idx == 0 %}disabled style="opacity:0.5; cursor:not-allowed;"{% endif %}>
             <i class="fas fa-chevron-left mr-1"></i> Back
         </button>
         <div class="text-sm font-medium text-gray-700">Question {{ question_number }} of {{ total_questions }}</div>
-        <button onclick="document.querySelector('#question-form button[value=\'next\']').click();" 
+        <button onclick="document.querySelector('#question-form button[value=\'next\']').click();"
                 class="nav-button nav-button-primary">
             Next <i class="fas fa-chevron-right ml-1"></i>
         </button>
@@ -358,27 +369,26 @@
         <h2 class="text-xl font-semibold mb-4 text-center">Calculator</h2>
         <div class="calculator">
             <div id="calc-display" class="display">0</div>
-            <button onclick="calcInput('clear')">AC</button>
-            <button onclick="calcInput('sign')">+/-</button>
-            <button onclick="calcInput('%')">%</button>
-            <button class="operator" onclick="calcInput('/')">/</button>
-            <button onclick="calcInput('7')">7</button>
-            <button onclick="calcInput('8')">8</button>
-            <button onclick="calcInput('9')">9</button>
-            <button class="operator" onclick="calcInput('*')">x</button>
-            <button onclick="calcInput('4')">4</button>
-            <button onclick="calcInput('5')">5</button>
-            <button onclick="calcInput('6')">6</button>
-            <button class="operator" onclick="calcInput('-')">-</button>
-            <button onclick="calcInput('1')">1</button>
-            <button onclick="calcInput('2')">2</button>
-            <button onclick="calcInput('3')">3</button>
-            <button class="operator" onclick="calcInput('+')">+</button>
-            <button class="zero" onclick="calcInput('0')">0</button>
-            <button onclick="calcInput('.')">.</button>
-            <button class="equals" onclick="calcInput('=')">=</button>
+            <button onclick="calculator.clear()">AC</button>
+            <button onclick="calculator.toggleSign()">+/-</button>
+            <button onclick="calculator.percent()">%</button>
+            <button class="operator" onclick="calculator.chooseOperation('/')">/</button>
+            <button onclick="calculator.appendNumber('7')">7</button>
+            <button onclick="calculator.appendNumber('8')">8</button>
+            <button onclick="calculator.appendNumber('9')">9</button>
+            <button class="operator" onclick="calculator.chooseOperation('*')">x</button>
+            <button onclick="calculator.appendNumber('4')">4</button>
+            <button onclick="calculator.appendNumber('5')">5</button>
+            <button onclick="calculator.appendNumber('6')">6</button>
+            <button class="operator" onclick="calculator.chooseOperation('-')">-</button>
+            <button onclick="calculator.appendNumber('1')">1</button>
+            <button onclick="calculator.appendNumber('2')">2</button>
+            <button onclick="calculator.appendNumber('3')">3</button>
+            <button class="operator" onclick="calculator.chooseOperation('+')">+</button>
+            <button class="zero" onclick="calculator.appendNumber('0')">0</button>
+            <button onclick="calculator.appendNumber('.')">.</button>
+            <button class="equals" onclick="calculator.compute()">=</button>
         </div>
-         <p class="text-xs text-center mt-3 text-gray-500">(Note: This is a basic visual calculator. Full functionality is coming soon!)</p>
     </div>
 </div>
 
@@ -398,16 +408,33 @@
         }
     }
 
+    // It's assumed that 'startGlobalTimer' is defined in a global script,
+    // possibly loaded via layout.html. It should handle the countdown display
+    // and potentially auto-submit the form if the timer expires.
+    // Example call from HTML: startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', 'question-form');
+
     document.addEventListener('DOMContentLoaded', function() {
         const testDurationSeconds = {{ test_duration_minutes * 60 }};
         const startTimeIso = "{{ start_time_iso }}";
-        if (startTimeIso && testDurationSeconds) {
+
+        // Ensure startGlobalTimer is available before calling
+        if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds) {
             startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', 'question-form');
+        } else if (!startTimeIso || !testDurationSeconds) {
+            console.warn("Timer start time or duration not provided.");
+        } else if (typeof startGlobalTimer !== 'function') {
+            console.error("startGlobalTimer function is not defined. Timer will not start.");
+            const timerDisplay = document.getElementById('test-page-timer');
+            if(timerDisplay) timerDisplay.textContent = "Error: Timer offline";
         }
+
 
         const markReviewCheckbox = document.getElementById('mark_review_cb');
         if (markReviewCheckbox) {
             markReviewCheckbox.addEventListener('change', function() {
+                // This will submit the form. The backend handles saving the review state.
+                // The 'required' attribute on radio buttons has been removed to allow this
+                // submission even if no answer is selected.
                 document.getElementById('question-form').submit();
             });
         }
@@ -418,25 +445,26 @@
 
         if (hidePassageButton && passageColumn && questionColumn) {
             let isPassageHidden = localStorage.getItem('isPassageHidden') === 'true';
-            if (isPassageHidden) {
-                passageColumn.classList.add('hidden');
-                questionColumn.classList.add('full-width');
-                hidePassageButton.textContent = 'Show';
-            }
-            hidePassageButton.addEventListener('click', function() {
-                isPassageHidden = !isPassageHidden;
-                if (isPassageHidden) {
+            function applyPassageVisibility(hidden) {
+                if (hidden) {
                     passageColumn.classList.add('hidden');
                     questionColumn.classList.add('full-width');
-                    this.textContent = 'Show';
+                    hidePassageButton.textContent = 'Show';
                 } else {
                     passageColumn.classList.remove('hidden');
                     questionColumn.classList.remove('full-width');
-                    this.textContent = 'Hide';
+                    hidePassageButton.textContent = 'Hide';
                 }
+            }
+            applyPassageVisibility(isPassageHidden); // Apply on load
+
+            hidePassageButton.addEventListener('click', function() {
+                isPassageHidden = !isPassageHidden;
+                applyPassageVisibility(isPassageHidden);
                 localStorage.setItem('isPassageHidden', isPassageHidden);
             });
         } else if (hidePassageButton) {
+            // If this is a math question, there's no passage column. Hide the button.
             hidePassageButton.style.display = 'none';
         }
 
@@ -446,54 +474,112 @@
             directionsButton.addEventListener('click', function() { toggleModal('directions-modal', true); });
         }
         const calculatorButton = document.getElementById('calculator-button');
-        if (calculatorButton) {
-            calculatorButton.addEventListener('click', function() { toggleModal('calculator-modal', true); });
+         if (calculatorButton) {
+            // Only show calculator button if it's a math question
+            if ("{{ question.id }}".startsWith("m")) { // Assuming math question IDs start with "m"
+                calculatorButton.style.display = 'inline-block'; // Or 'flex' etc. depending on parent
+                calculatorButton.addEventListener('click', function() { toggleModal('calculator-modal', true); });
+            } else {
+                calculatorButton.style.display = 'none';
+            }
         }
 
-        // Basic Calculator Logic (Visual Only, no real calculations)
-        const calcDisplay = document.getElementById('calc-display');
-        let currentCalcInput = '0';
-        let previousCalcInput = '';
-        let calcOperation = null;
 
-        window.calcInput = function(value) {
-            if (!calcDisplay) return;
+        // Enhanced Calculator Object
+        window.calculator = {
+            displayElement: document.getElementById('calc-display'),
+            currentOperand: '0',
+            previousOperand: '',
+            operation: undefined,
+            readyToReset: false, // If true, next number input clears currentOperand
 
-            if (value === 'clear') {
-                currentCalcInput = '0';
-                previousCalcInput = '';
-                calcOperation = null;
-            } else if (value === '+/-') {
-                currentCalcInput = (parseFloat(currentCalcInput) * -1).toString();
-            } else if (value === '%') {
-                currentCalcInput = (parseFloat(currentCalcInput) / 100).toString();
-            } else if (['/', '*', '-', '+'].includes(value)) {
-                // This is a very simplified logic, not a full eval
-                if (calcOperation && previousCalcInput) { // if there's a pending operation
-                     currentCalcInput = "Op"; // Placeholder for operation
-                }
-                calcOperation = value;
-                previousCalcInput = currentCalcInput;
-                currentCalcInput = '0'; // Ready for next input
-            } else if (value === '=') {
-                if (calcOperation && previousCalcInput) {
-                    // Simulate a result - not actual calculation
-                    currentCalcInput = "Result"; // Placeholder
-                    previousCalcInput = '';
-                    calcOperation = null;
-                }
-            } else if (value === '.') {
-                if (!currentCalcInput.includes('.')) {
-                    currentCalcInput += '.';
-                }
-            } else { // Number input
-                if (currentCalcInput === '0' || currentCalcInput === "Op" || currentCalcInput === "Result") {
-                    currentCalcInput = value;
+            clear() {
+                this.currentOperand = '0';
+                this.previousOperand = '';
+                this.operation = undefined;
+                this.readyToReset = false;
+                this.updateDisplay();
+            },
+
+            appendNumber(number) {
+                if (this.currentOperand.includes('.') && number === '.') return;
+                if (this.readyToReset) {
+                    this.currentOperand = number;
+                    this.readyToReset = false;
                 } else {
-                    currentCalcInput += value;
+                    this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number;
+                }
+                this.updateDisplay();
+            },
+
+            chooseOperation(operation) {
+                if (this.currentOperand === '' && this.previousOperand === '') return;
+                if (this.currentOperand !== '' && this.previousOperand !== '') {
+                    this.compute();
+                }
+                this.operation = operation;
+                this.previousOperand = this.currentOperand;
+                this.currentOperand = '';
+                this.readyToReset = false; // Allow chaining operations like 2+3+4
+                // Optionally display the operation or previous operand
+                // this.displayElement.textContent = this.previousOperand + " " + this.operation; 
+            },
+
+            compute() {
+                let computation;
+                const prev = parseFloat(this.previousOperand);
+                const current = parseFloat(this.currentOperand);
+                if (isNaN(prev) || isNaN(current)) return;
+
+                switch (this.operation) {
+                    case '+': computation = prev + current; break;
+                    case '-': computation = prev - current; break;
+                    case '*': computation = prev * current; break;
+                    case '/': 
+                        if (current === 0) {
+                            this.displayElement.textContent = "Error";
+                            this.currentOperand = 'Error';
+                            this.previousOperand = '';
+                            this.operation = undefined;
+                            this.readyToReset = true;
+                            return;
+                        }
+                        computation = prev / current; 
+                        break;
+                    default: return;
+                }
+                this.currentOperand = computation.toString();
+                this.operation = undefined;
+                this.previousOperand = '';
+                this.readyToReset = true; // After equals, next number input should clear
+                this.updateDisplay();
+            },
+
+            toggleSign() {
+                if (this.currentOperand === 'Error' || this.currentOperand === '') return;
+                this.currentOperand = (parseFloat(this.currentOperand) * -1).toString();
+                this.updateDisplay();
+            },
+            
+            percent() {
+                if (this.currentOperand === 'Error' || this.currentOperand === '') return;
+                this.currentOperand = (parseFloat(this.currentOperand) / 100).toString();
+                this.updateDisplay();
+                this.readyToReset = true;
+            },
+
+            updateDisplay() {
+                if (this.currentOperand === 'Error') {
+                     this.displayElement.textContent = 'Error';
+                } else if (this.currentOperand.length > 12) {
+                    this.displayElement.textContent = parseFloat(this.currentOperand).toExponential(5);
+                } else {
+                    this.displayElement.textContent = this.currentOperand || this.previousOperand || '0';
                 }
             }
-            calcDisplay.textContent = currentCalcInput.substring(0, 12); // Limit display length
+        };
+        if(calculator.displayElement) { // Initialize display if calculator exists
+            calculator.updateDisplay();
         }
 
     });

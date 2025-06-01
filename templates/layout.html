@@ -12,7 +12,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, h4, h5, h6 { font-family: 'Lexend', sans-serif; }
-        .content-wrapper { min-height: calc(100vh - 160px); }
+        .content-wrapper { min-height: calc(100vh - 160px); } /* Adjust 160px based on actual header/footer height */
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px;}
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px;}
@@ -20,7 +20,7 @@
     </style>
     {% block head_extra %}{% endblock %}
 </head>
-<body class="bg-gradient-to-br from-sky-100 via-indigo-50 to-purple-100 text-gray-800 antialiased">
+<body class="{% block body_class %}bg-gradient-to-br from-sky-100 via-indigo-50 to-purple-100{% endblock %} text-gray-800 antialiased">
     <header class="bg-white/80 backdrop-blur-md shadow-lg sticky top-0 z-50">
         <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-3">
             <div class="flex items-center justify-between">
@@ -35,6 +35,8 @@
                     </span>
                 </a>
                 <div class="flex items-center space-x-4">
+                    {# This timer display is general. test_page.html has its own. #}
+                    {# If a timer needs to be shown here, startGlobalTimer should be called targeting this ID. #}
                     <div id="timer-display-header" class="text-lg font-semibold text-indigo-600"></div>
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">Dashboard</a>
@@ -48,7 +50,18 @@
         </div>
     </header>
 
-    <main class="container mx-auto content-wrapper bg-white rounded-lg shadow-md p-6">
+    <main class="container mx-auto content-wrapper bg-white rounded-lg shadow-md p-6 my-6"> {# Added my-6 for spacing #}
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                <div class="p-4 mb-4 text-sm rounded-lg 
+                    {% if category == 'danger' %} bg-red-100 text-red-700 {% elif category == 'success' %} bg-green-100 text-green-700 {% elif category == 'warning' %} bg-yellow-100 text-yellow-700 {% else %} bg-blue-100 text-blue-700 {% endif %}"
+                    role="alert">
+                    {{ message }}
+                </div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
         {% block content %}{% endblock %}
     </main>
 
@@ -62,54 +75,66 @@
                          onerror="this.onerror=null; this.src='https://placehold.co/120x30/FFFFFF/003366?text=Anannt&font=lexend';">
                     <span class="hidden sm:inline-block text-lg text-gray-300">Anannt Education</span>
                 </a>
-                <p class="text-gray-400">&copy; {{ now.year }} Anannt Education. All rights reserved.</p>
+                <p class="text-gray-400">&copy; {{ now.year if now else '2024' }} Anannt Education. All rights reserved.</p> {# Added now check #}
             </div>
             <p class="text-sm text-gray-500">Empowering students for SAT success.</p>
         </div>
     </footer>
+
     <script>
-        // Global timer logic (can be enhanced)
-        let testTimerInterval;
-        let timeRemainingGlobal;
+        // Global timer logic
+        let testTimerInterval; // Keep a reference to clear if needed
 
-        function updateGlobalTimerDisplay(timeInSeconds) {
-            const timerDisplayHeader = document.getElementById('timer-display-header');
-            if (!timerDisplayHeader) return;
-
-            if (timeInSeconds === null || timeInSeconds < 0) {
-                timerDisplayHeader.textContent = "";
+        // targetDisplayElementId: ID of the HTML element to show the timer
+        // formToSubmitId (optional): ID of the form to submit when timer ends
+        function startGlobalTimer(durationSeconds, startTimeIso, targetDisplayElementId, formToSubmitId = null) {
+            if (testTimerInterval) { // Clear any existing timer associated with this variable
+                clearInterval(testTimerInterval);
+            }
+            
+            const timerDisplayElement = document.getElementById(targetDisplayElementId);
+            if (!timerDisplayElement) {
+                console.error("Timer display element not found:", targetDisplayElementId);
                 return;
             }
-            const minutes = Math.floor(timeInSeconds / 60);
-            const seconds = timeInSeconds % 60;
-            timerDisplayHeader.textContent = `Time: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
 
-        function startGlobalTimer(durationSeconds, startTimeIso) {
-            clearInterval(testTimerInterval);
             const startTime = new Date(startTimeIso);
             const endTime = new Date(startTime.getTime() + durationSeconds * 1000);
 
             function update() {
                 const now = new Date();
-                timeRemainingGlobal = Math.max(0, Math.floor((endTime - now) / 1000));
-                updateGlobalTimerDisplay(timeRemainingGlobal);
+                const timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
+                
+                const minutes = Math.floor(timeRemaining / 60);
+                const seconds = timeRemaining % 60;
+                timerDisplayElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
 
-                if (timeRemainingGlobal <= 0) {
+                if (timeRemaining <= 0) {
                     clearInterval(testTimerInterval);
-                    const form = document.getElementById('question-form');
-                    if(form && typeof form.submit === 'function') {
-                        try {
-                            form.submit();
-                        } catch (e) {
-                            console.error("Error auto-submitting form:", e);
+                    timerDisplayElement.textContent = "00:00"; // Explicitly show 00:00
+                    if (formToSubmitId) {
+                        const form = document.getElementById(formToSubmitId);
+                        if (form && typeof form.submit === 'function') {
+                            // Prevent multiple submissions if update() somehow gets called again after 0
+                            if (!form.dataset.submitting) { 
+                                form.dataset.submitting = 'true';
+                                console.log("Timer ended. Submitting form:", formToSubmitId);
+                                try {
+                                    form.submit();
+                                } catch (e) {
+                                    console.error("Error auto-submitting form:", e);
+                                    delete form.dataset.submitting; // Allow retry if submission failed? Or handle differently.
+                                }
+                            }
+                        } else if (form) {
+                            console.warn("Form found, but submit is not a function or already submitted (no data-submitting).");
+                        } else {
+                           console.warn("Form to submit not found:", formToSubmitId);
                         }
-                    } else if (form) {
-                         console.warn("Form found, but submit is not a function or form already submitted.");
                     }
                 }
             }
-            update(); // Initial call
+            update(); // Initial call to display timer immediately
             testTimerInterval = setInterval(update, 1000);
         }
     </script>

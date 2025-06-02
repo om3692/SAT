@@ -4,81 +4,28 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import datetime
+import random
 import io
 import csv
-import json
-import logging
+import json # Required for storing and parsing answers_data
 
 # --- Application Setup ---
 app = Flask(__name__)
-
-# --- Logging Setup ---
-is_debug_env = os.environ.get('FLASK_DEBUG', 'False').lower() == 'true'
-log_level = logging.DEBUG if is_debug_env else logging.INFO
-# Configure Flask's built-in logger
-app.logger.setLevel(log_level)
-# BasicConfig can be helpful for local dev; Gunicorn might handle root logger on Render.
-logging.basicConfig(level=log_level, format='%(asctime)s %(levelname)s %(name)s: %(message)s')
-
-if not is_debug_env:
-    app.logger.info('SATInsight App Starting Up in Production-like mode (e.g., on Render)')
-else:
-    app.logger.info('SATInsight App Starting Up in DEBUG mode (local development)')
-
-# --- SECRET_KEY Configuration ---
-# CRITICAL FIX FOR RENDER: Prioritize environment variable for SECRET_KEY.
-# DO NOT use os.urandom(24) directly for app.config['SECRET_KEY'] in production.
-app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY')
-if not app.config['SECRET_KEY']:
-    app.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    app.logger.critical("!!! FATAL ERROR: SECRET_KEY ENVIRONMENT VARIABLE IS NOT SET                 !!!")
-    app.logger.critical("!!! Flask sessions WILL FAIL, leading to app crashes and reload loops.    !!!")
-    app.logger.critical("!!! SET THIS IN YOUR RENDER SERVICE ENVIRONMENT SETTINGS IMMEDIATELY.     !!!")
-    app.logger.critical("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!")
-    if is_debug_env: # Fallback for local development ONLY if FLASK_DEBUG is true
-        app.logger.warning("DEVELOPMENT ONLY: Using a temporary, insecure SECRET_KEY ('dev_secret_key').")
-        app.logger.warning("For consistent local dev, consider using a fixed string or python-dotenv.")
-        app.config['SECRET_KEY'] = "dev_secret_key_please_change_for_local_prod_like_testing" # More stable for local dev than urandom
-    # Note: If SECRET_KEY remains unset on Render, the app will still crash on session operations.
-
-# --- Database Configuration ---
-# CRITICAL FIX FOR RENDER: Prioritize environment variable for DATABASE_URL.
-DATABASE_URL = os.environ.get('DATABASE_URL')
-if DATABASE_URL:
-    app.logger.info(f"DATABASE_URL detected from environment. Type: {DATABASE_URL.split('://')[0] if '://' in DATABASE_URL else 'Unknown'}")
-    if DATABASE_URL.startswith("postgres://"): # Common for Render PostgreSQL
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL.replace("postgres://", "postgresql://", 1)
-        app.logger.info("Adjusted DATABASE_URL for SQLAlchemy (postgres:// -> postgresql://).")
-    else: # Assumes postgresql:// or other SQLAlchemy compatible URI if not the Render default
-        app.config['SQLALCHEMY_DATABASE_URI'] = DATABASE_URL
-        app.logger.info(f"Using provided DATABASE_URL as is: {app.config['SQLALCHEMY_DATABASE_URI']}")
-else:
-    app.logger.warning("DATABASE_URL environment variable NOT FOUND. Defaulting to local SQLite ('sqlite:///sattest.db').")
-    app.logger.warning("IMPORTANT: For Render deployment, SQLite is NOT recommended for persistent data as its filesystem is ephemeral. "
-                     "Data (users, scores) WILL BE LOST on deploys/restarts. Use Render's managed PostgreSQL service and set DATABASE_URL.")
-    # Your original fallback for local SQLite:
-    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sattest.db'
-    # For more robust local SQLite (creates 'instance' folder in your app root):
-    # instance_path = os.path.join(app.instance_path)
-    # if not os.path.exists(instance_path): os.makedirs(instance_path, exist_ok=True)
-    # sqlite_db_file = os.path.join(instance_path, 'sattest.db')
-    # app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///' + sqlite_db_file
-    app.logger.info(f"SQLite database configured at: {app.config['SQLALCHEMY_DATABASE_URI']}")
-
+app.config['SECRET_KEY'] = os.urandom(24)
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sattest.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
 db = SQLAlchemy(app)
 login_manager = LoginManager()
 login_manager.init_app(app)
 login_manager.login_view = 'login'
-login_manager.login_message = "Please log in to access this page."
-login_manager.login_message_category = 'info'
 
 # --- Database Models ---
 class User(UserMixin, db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(100), unique=True, nullable=False)
     password_hash = db.Column(db.String(200), nullable=False)
-    scores = db.relationship('Score', backref='user', lazy='dynamic')
+    scores = db.relationship('Score', backref='user', lazy=True)
 
     def set_password(self, password):
         self.password_hash = generate_password_hash(password)
@@ -98,23 +45,10 @@ class Score(db.Model):
     answers_data = db.Column(db.Text, nullable=True)
 
 @login_manager.user_loader
-def load_user(user_id_str): # user_id from session is a string
-    app.logger.debug(f"load_user attempting for ID string: '{user_id_str}'")
-    try:
-        user_id_int = int(user_id_str)
-        # For Flask-SQLAlchemy 3.x+ (likely installed if requirements.txt has >=2.5):
-        user = db.session.get(User, user_id_int)
-        if not user:
-            app.logger.warning(f"load_user: No user found for ID {user_id_int}")
-        return user
-    except ValueError:
-        app.logger.warning(f"load_user: Invalid user_id format '{user_id_str}'. Not an integer.")
-        return None
-    except Exception as e:
-        app.logger.error(f"Error in load_user for ID string '{user_id_str}': {e}", exc_info=True)
-        return None
+def load_user(user_id):
+    return User.query.get(int(user_id))
 
-# --- Question Data --- (Using your 30 questions)
+# --- Question Data ---
 QUESTIONS_DATA = {
     "math": [
         {"id": "m1", "module": 1, "text": "If 5x + 6 = 10, what is the value of 5x + 3?", "options": ["1", "3", "4", "7"], "correctAnswer": "7", "topic": "Algebra", "difficulty": "Easy"},
@@ -154,96 +88,105 @@ QUESTIONS_DATA = {
 ALL_QUESTIONS = QUESTIONS_DATA["math"] + QUESTIONS_DATA["reading_writing"]
 ALL_QUESTIONS_MAP = {q['id']: q for q in ALL_QUESTIONS}
 ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS]
+
 TOTAL_QUESTIONS = len(ALL_QUESTIONS)
 TEST_DURATION_MINUTES = 30
-app.logger.info(f"Successfully loaded {TOTAL_QUESTIONS} questions ({len(QUESTIONS_DATA['math'])} Math, {len(QUESTIONS_DATA['reading_writing'])} R&W).")
 
 def initialize_test_session():
-    user_id_log = current_user.id if current_user.is_authenticated else 'Anonymous (session init)'
-    app.logger.info(f"Attempting to initialize test session for user: {user_id_log}")
-
-    # Explicitly pop old test-related keys to ensure a completely fresh test state.
-    keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in keys_to_pop:
-        if session.pop(key, None): # Pop returns the value or None
-             app.logger.debug(f"Popped old session key: {key} for user {user_id_log}")
-
     session['current_question_index'] = 0
     session['answers'] = {}
-    session['start_time'] = datetime.datetime.now().isoformat() # This is CRUCIAL for the timer
-    
-    if not ORDERED_QUESTION_IDS:
-        app.logger.error("CRITICAL FAILURE: ORDERED_QUESTION_IDS is empty during session initialization! No questions loaded from QUESTIONS_DATA.")
-        raise ValueError("Cannot start test: No questions are available. Please check server configuration.")
+    session['start_time'] = datetime.datetime.now().isoformat()
     session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:]
-    
     session['marked_for_review'] = {}
-    session.modified = True # VERY IMPORTANT: Ensure Flask saves these session modifications.
-
-    app.logger.info(f"Session successfully initialized for test for user {user_id_log}. "
-                    f"Start time: {session.get('start_time')}, "
-                    f"Num Qs ordered: {len(session.get('test_questions_ids_ordered', []))}. "
-                    f"Current session keys present: {sorted(list(session.keys()))}")
 
 def calculate_mock_score(answers):
-    correct_count = 0; math_correct = 0; rw_correct = 0
-    math_total_qs_in_test = sum(1 for q_id in ORDERED_QUESTION_IDS if q_id.startswith('m'))
-    rw_total_qs_in_test = sum(1 for q_id in ORDERED_QUESTION_IDS if q_id.startswith('rw'))
+    correct_count = 0
+    math_correct = 0
+    math_total = 0
+    rw_correct = 0
+    rw_total = 0
     for q_id, user_answer in answers.items():
-        question_detail = ALL_QUESTIONS_MAP.get(q_id);
+        question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail: continue
-        is_math = q_id.startswith('m')
+        is_math = any(q_id == m_q['id'] for m_q in QUESTIONS_DATA['math'])
+        if is_math: math_total += 1
+        else: rw_total += 1
         if user_answer == question_detail['correctAnswer']:
             correct_count += 1
             if is_math: math_correct += 1
             else: rw_correct += 1
-    mock_math_score = 200 + int((math_correct / max(1, math_total_qs_in_test)) * 600) if math_total_qs_in_test > 0 else 200
-    mock_rw_score = 200 + int((rw_correct / max(1, rw_total_qs_in_test)) * 600) if rw_total_qs_in_test > 0 else 200
+    mock_math_score = 200 + int((math_correct / max(1, math_total)) * 600)
+    mock_rw_score = 200 + int((rw_correct / max(1, rw_total)) * 600)
     mock_total_score = mock_math_score + mock_rw_score
-    mock_math_score = max(200, min(800, mock_math_score)); mock_rw_score = max(200, min(800, mock_rw_score)); mock_total_score = max(400, min(1600, mock_total_score))
-    weaknesses = []; recommendations = []
-    if TOTAL_QUESTIONS > 0: 
-        if math_total_qs_in_test > 0 and (math_correct / math_total_qs_in_test) < 0.6: weaknesses.append("Math Concepts"); recommendations.append("Review math topics.")
-        if rw_total_qs_in_test > 0 and (rw_correct / rw_total_qs_in_test) < 0.6: weaknesses.append("R&W Skills"); recommendations.append("Focus on R&W techniques.")
-        if not weaknesses: weaknesses.append("Good performance!"); recommendations.append("Keep practicing.")
-    else: weaknesses.append("No questions processed."); recommendations.append("Check test configuration.")
-    return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "total_test_questions": TOTAL_QUESTIONS, "weaknesses": weaknesses, "recommendations": recommendations}
+    mock_math_score = max(200, min(800, mock_math_score))
+    mock_rw_score = max(200, min(800, mock_rw_score))
+    mock_total_score = max(400, min(1600, mock_total_score))
+    weaknesses = []
+    recommendations = []
+    if (math_correct / max(1, math_total)) < 0.6: weaknesses.append("Algebra Concepts (Math)"); recommendations.append("Review foundational algebra topics.")
+    if (rw_correct / max(1, rw_total)) < 0.6: weaknesses.append("Grammar Rules (Reading & Writing)"); recommendations.append("Focus on Standard English Conventions.")
+    if not weaknesses: weaknesses.append("Good overall performance!"); recommendations.append("Explore advanced topics.")
+    return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "weaknesses": weaknesses, "recommendations": recommendations}
 
 def generate_csv_report(score_obj):
-    output = io.StringIO(); writer = csv.writer(output)
-    headers = ["Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome", "QuestionID", "Module", "Difficulty", "QuestionText", "AllOptions", "ScoreID", "TestDate"]
-    writer.writerow(headers)
-    if not score_obj or not score_obj.answers_data: writer.writerow(["N/A"] * len(headers[:-2]) + [score_obj.id if score_obj else "N/A", "N/A"]); output.seek(0); return output.getvalue()
-    try: user_answers_dict = json.loads(score_obj.answers_data)
-    except json.JSONDecodeError: writer.writerow(["Error decoding answers"] + ["N/A"] * (len(headers) - 3) + [score_obj.id, score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj.timestamp else "N/A"]); output.seek(0); return output.getvalue()
-    test_date_str = score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj.timestamp else "N/A"
-    for idx, q_id in enumerate(ORDERED_QUESTION_IDS):
-        question_detail = ALL_QUESTIONS_MAP.get(q_id); question_sequence_number = idx + 1
-        if not question_detail: writer.writerow([question_sequence_number, "Unknown", "N/A", "N/A", "N/A", "Question Detail Missing", q_id, "N/A", "N/A", f"Details missing for Q_ID: {q_id}", "[]", score_obj.id, test_date_str]); continue
-        section_val = "Math" if q_id.startswith('m') else "Reading & Writing"; skill_type_val = question_detail.get("topic", "N/A"); user_answer_val = user_answers_dict.get(q_id, "Not Answered"); correct_answer_val = question_detail.get("correctAnswer", "N/A")
-        outcome_val = "Not Answered";
-        if user_answer_val != "Not Answered": outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect"
-        module_val = question_detail.get("module", "N/A"); difficulty_val = question_detail.get("difficulty", "N/A"); question_text_val = question_detail.get("text", "N/A")
-        if question_detail.get("passage"): question_text_val = f"[Passage Based] {question_text_val}"
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow([
+        "Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome",
+        "QuestionID", "Module", "Difficulty", "QuestionText", "AllOptions", "ScoreID", "TestDate"
+    ])
+    if not score_obj.answers_data:
+        writer.writerow([
+            "N/A", "N/A", "N/A", "N/A", "N/A", "No detailed answer data",
+            "N/A", "N/A", "N/A", "N/A", "N/A", score_obj.id if score_obj else "N/A",
+            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj else "N/A"
+        ])
+        output.seek(0)
+        return output.getvalue()
+    try:
+        user_answers_dict = json.loads(score_obj.answers_data)
+    except json.JSONDecodeError:
+        writer.writerow([
+            "N/A", "N/A", "N/A", "N/A", "N/A", "Error decoding answers",
+            "N/A", "N/A", "N/A", "N/A", "N/A", score_obj.id,
+            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+        ])
+        output.seek(0)
+        return output.getvalue()
+
+    test_date_str = score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    score_id_val = score_obj.id
+    question_sequence_number = 0
+
+    for q_id in ORDERED_QUESTION_IDS:
+        question_sequence_number += 1
+        question_detail = ALL_QUESTIONS_MAP.get(q_id)
+        if not question_detail:
+            writer.writerow([
+                question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing",
+                q_id, "Unknown", "Unknown", f"Details not found for Q_ID: {q_id}",
+                "[]", score_id_val, test_date_str
+            ])
+            continue
+        section_val = "Math" if any(q_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
+        skill_type_val = question_detail.get("topic", "N/A")
+        user_answer_val = user_answers_dict.get(q_id, "Not Answered")
+        correct_answer_val = question_detail.get("correctAnswer", "N/A")
+        outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect"
+        if user_answer_val == "Not Answered": outcome_val = "Not Answered"
+        module_val = question_detail.get("module", "N/A")
+        difficulty_val = question_detail.get("difficulty", "N/A")
+        question_text_val = question_detail.get("text", "N/A")
+        passage_text = question_detail.get("passage")
+        if passage_text:
+             question_text_val = f"[PASSAGE-BASED Q:{question_sequence_number}] {question_text_val}"
         all_options_json = json.dumps(question_detail.get("options", []))
-        writer.writerow([question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val, q_id, module_val, difficulty_val, question_text_val, all_options_json, score_obj.id, test_date_str])
+        writer.writerow([
+            question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val,
+            q_id, module_val, difficulty_val, question_text_val, all_options_json, score_id_val, test_date_str
+        ])
     output.seek(0)
     return output.getvalue()
-
-# --- Error Handlers ---
-@app.errorhandler(404)
-def page_not_found_error_handler(e):
-    user_id_log = current_user.id if current_user.is_authenticated else 'Anonymous'
-    app.logger.warning(f"404 Not Found: {request.url} (Referrer: {request.referrer}) by user {user_id_log}")
-    return render_template('error_page.html', error_code=404, error_name="Page Not Found", error_message="The page you were looking for doesn't exist."), 404
-
-@app.errorhandler(Exception)
-def handle_general_exception_handler(e):
-    app.logger.error(f"Unhandled application exception: {e} at {request.url}", exc_info=True)
-    from werkzeug.exceptions import HTTPException
-    if isinstance(e, HTTPException):
-        return render_template("error_page.html", error_code=e.code, error_name=e.name, error_message=e.description), e.code
-    return render_template("error_page.html", error_code=500, error_name="Internal Server Error", error_message="An unexpected internal error occurred. We've been notified and are looking into it."), 500
 
 # --- Routes ---
 @app.route('/')
@@ -254,160 +197,95 @@ def index():
 def register():
     if current_user.is_authenticated: return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form.get('username','').strip()
+        username = request.form.get('username')
         password = request.form.get('password')
-        if not username or not password: flash('Username and password are required.', 'warning'); return redirect(url_for('register'))
-        if len(username) < 3: flash('Username must be at least 3 characters.', 'warning'); return redirect(url_for('register'))
-        if len(password) < 6: flash('Password must be at least 6 characters.', 'warning'); return redirect(url_for('register'))
-        
         existing_user = User.query.filter_by(username=username).first()
-        if existing_user: flash('Username already exists.', 'danger'); return redirect(url_for('register'))
-        
+        if existing_user:
+            flash('Username already exists. Please choose a different one.', 'danger')
+            return redirect(url_for('register'))
+        if not username or not password:
+            flash('Username and password are required.', 'warning')
+            return redirect(url_for('register'))
         new_user = User(username=username)
         new_user.set_password(password)
-        try:
-            db.session.add(new_user); db.session.commit()
-            flash('Registration successful! Please log in.', 'success'); app.logger.info(f"User '{username}' registered.")
-            return redirect(url_for('login'))
-        except Exception as e:
-            db.session.rollback()
-            app.logger.error(f"DB error during registration for '{username}': {e}", exc_info=True)
-            flash('Database error during registration. Please try again.', 'danger')
-            return redirect(url_for('register'))
+        db.session.add(new_user)
+        db.session.commit()
+        flash('Registration successful! Please log in.', 'success')
+        return redirect(url_for('login'))
     return render_template('register.html', now=datetime.datetime.utcnow())
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated: return redirect(url_for('index'))
     if request.method == 'POST':
-        username = request.form.get('username','').strip()
+        username = request.form.get('username')
         password = request.form.get('password')
-        user = User.query.filter_by(username=username).first() # Case-sensitive username
+        user = User.query.filter_by(username=username).first()
         if user and user.check_password(password):
-            login_user(user, remember=(request.form.get('remember') == 'on'))
-            flash('Logged in successfully!', 'success');
-            app.logger.info(f"User '{username}' logged in.")
+            login_user(user, remember=request.form.get('remember'))
+            flash('Logged in successfully!', 'success')
             next_page = request.args.get('next')
-            # Basic Open Redirect protection
-            if next_page and not (next_page.startswith('/') or next_page.startswith(request.host_url)):
-                 app.logger.warning(f"Invalid 'next' URL '{next_page}' during login for user '{username}'. Defaulting to index.")
-                 next_page = url_for('index')
             return redirect(next_page or url_for('index'))
         else:
             flash('Invalid username or password.', 'danger')
-            app.logger.warning(f"Failed login for username '{username}'.")
     return render_template('login.html', now=datetime.datetime.utcnow())
 
 @app.route('/logout')
 @login_required
 def logout():
-    user_id_log = current_user.username
     logout_user()
-    session.clear() # Clear the entire session for a clean logout
-    flash('You have been successfully logged out.', 'info')
-    app.logger.info(f"User '{user_id_log}' logged out and session cleared.")
+    flash('You have been logged out.', 'info')
     return redirect(url_for('index'))
 
-@app.route('/dashboard/')
+@app.route('/dashboard')
 @login_required
 def dashboard():
-    app.logger.info(f"Dashboard accessed by user: '{current_user.username}'")
-    try:
-        user_scores = current_user.scores.order_by(Score.timestamp.desc()).all()
-    except Exception as e:
-        app.logger.error(f"Database error fetching scores for dashboard for user '{current_user.username}': {e}", exc_info=True)
-        flash('Could not retrieve your scores due to a server error.', 'danger')
-        user_scores = []
+    user_scores = Score.query.filter_by(user_id=current_user.id).order_by(Score.timestamp.desc()).all()
     return render_template('dashboard.html', scores=user_scores, now=datetime.datetime.utcnow())
 
 @app.route('/start_test', methods=['POST'])
 @login_required
 def start_test():
-    user_id_log = current_user.username
-    app.logger.info(f"User '{user_id_log}' is POSTing to /start_test to initialize a new test.")
-    try:
-        initialize_test_session()
-        app.logger.info(f"Test session successfully initialized for '{user_id_log}'. Redirecting to first question (q_idx=0).")
-        return redirect(url_for('test_question_page', q_idx=0))
-    except ValueError as ve:
-        app.logger.error(f"ValueError during start_test for user '{user_id_log}': {ve}", exc_info=True)
-        flash(str(ve), "danger")
-        return redirect(url_for('index'))
-    except Exception as e:
-        app.logger.error(f"Unexpected error during /start_test for user '{user_id_log}': {e}", exc_info=True)
-        flash("An unexpected server error occurred while trying to start the test. Please try again.", "danger")
-        return redirect(url_for('index'))
+    initialize_test_session()
+    return redirect(url_for('test_question_page', q_idx=0))
 
 @app.route('/test/question/<int:q_idx>', methods=['GET', 'POST'])
 @login_required
 def test_question_page(q_idx):
-    user_id_log = current_user.username
-    app.logger.info(f"Accessing /test/question/{q_idx} for user '{user_id_log}'. Method: {request.method}.")
-    app.logger.debug(f"Session keys for '{user_id_log}' at q_idx {q_idx}: {sorted(list(session.keys()))}")
-    app.logger.debug(f"Session 'test_questions_ids_ordered' length: {len(session.get('test_questions_ids_ordered', []))}, 'start_time': {session.get('start_time')}")
-
-    required_session_keys = ['test_questions_ids_ordered', 'answers', 'start_time', 'marked_for_review', 'current_question_index']
-    session_valid = True
-    missing_keys = [key for key in required_session_keys if key not in session]
-
-    if missing_keys:
-        session_valid = False
-        app.logger.error(f"SESSION INVALID for '{user_id_log}' at q_idx {q_idx}. Missing session keys: {missing_keys}. Session content: {dict(session)}")
-    
-    if session_valid and (not session.get('test_questions_ids_ordered') or len(session.get('test_questions_ids_ordered',[])) == 0) :
-        session_valid = False
-        app.logger.error(f"SESSION INVALID for '{user_id_log}' at q_idx {q_idx}. 'test_questions_ids_ordered' is empty/None or has zero length. Session content: {dict(session)}")
-
-    if not session_valid:
-        flash('Your test session is invalid or appears to have expired. Please start a new test to continue.', 'warning')
+    if 'test_questions_ids_ordered' not in session or not session['test_questions_ids_ordered']:
+        flash('Test session not found or expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
-
     ordered_ids = session['test_questions_ids_ordered']
-    
-    if not (0 <= q_idx < len(ordered_ids)):
-        valid_q_idx = session.get('current_question_index', 0)
-        if not (0 <= valid_q_idx < len(ordered_ids)) and len(ordered_ids) > 0 :
-             valid_q_idx = 0 
-        elif len(ordered_ids) == 0: 
-            app.logger.error(f"Critical error: No questions in session for user '{user_id_log}' and q_idx {q_idx} is out of bounds. Redirecting to index.")
-            flash('No questions found in the current test session. Please try starting a new test.', 'danger')
-            return redirect(url_for('index')) 
-
-        flash('Invalid question number. Redirecting to your current or first question.', 'danger')
-        app.logger.warning(f"Out-of-bounds q_idx {q_idx} (max: {len(ordered_ids)-1}) for user '{user_id_log}'. Redirecting to {valid_q_idx}.")
-        return redirect(url_for('test_question_page', q_idx=valid_q_idx))
-    
+    if not 0 <= q_idx < len(ordered_ids):
+        current_q_idx_in_session = session.get('current_question_index', 0)
+        flash('Invalid question number.', 'danger')
+        return redirect(url_for('test_question_page', q_idx=current_q_idx_in_session))
     session['current_question_index'] = q_idx
     question_id = ordered_ids[q_idx]
     question = ALL_QUESTIONS_MAP.get(question_id)
-
     if not question:
-        flash('Error: Question data could not be loaded. Please restart the test.', 'danger')
-        app.logger.error(f"Question ID '{question_id}' (index {q_idx}) NOT FOUND in ALL_QUESTIONS_MAP for '{user_id_log}'.")
+        flash('Error: Question not found.', 'danger')
         return redirect(url_for('index'))
-
     if request.method == 'POST':
-        if request.form.get('answer'): session['answers'][question_id] = request.form.get('answer')
-        if 'mark_review' in request.form and request.form.get('mark_review') == 'true':
-            session['marked_for_review'][question_id] = True
-        else:
-            session['marked_for_review'].pop(question_id, None)
-        session.modified = True
+        selected_option = request.form.get('answer')
+        if selected_option: session['answers'][question_id] = selected_option
+        if 'mark_review' in request.form: session['marked_for_review'][question_id] = True
+        elif question_id in session['marked_for_review']: session['marked_for_review'].pop(question_id, None)
+        session.modified = True # Ensure session changes are saved
         action = request.form.get('action')
         if action == 'next':
             if q_idx + 1 < len(ordered_ids): return redirect(url_for('test_question_page', q_idx=q_idx + 1))
             else: return redirect(url_for('results'))
         elif action == 'back':
             if q_idx > 0: return redirect(url_for('test_question_page', q_idx=q_idx - 1))
+        # If no specific action (e.g. just marking for review), redirect to the same page
         return redirect(url_for('test_question_page', q_idx=q_idx))
 
-    current_section_name = "Math" if question_id.startswith('m') else "Reading & Writing"
+    current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
     current_module = question.get('module', 1)
     is_marked = session.get('marked_for_review', {}).get(question_id, False)
     selected_answer = session.get('answers', {}).get(question_id)
-    
-    return render_template('test_page.html', 
-                           question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS,
+    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS,
                            current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
                            start_time_iso=session['start_time'], test_duration_minutes=TEST_DURATION_MINUTES,
                            now=datetime.datetime.utcnow(), is_marked_for_review=is_marked,
@@ -416,73 +294,51 @@ def test_question_page(q_idx):
 @app.route('/results')
 @login_required
 def results():
-    if 'answers' not in session or 'start_time' not in session: flash('Test data incomplete. Start new test.', 'warning'); return redirect(url_for('index'))
-    user_submitted_answers = session.get('answers', {}); start_time_iso = session.get('start_time')
-    if not start_time_iso: flash('Error: Test start time missing.', 'danger'); return redirect(url_for('index'))
-    try: start_time = datetime.datetime.fromisoformat(start_time_iso)
-    except: flash('Error with test start time format.', 'danger'); return redirect(url_for('index'))
-    
-    end_time = datetime.datetime.now(datetime.timezone.utc)
-    if start_time.tzinfo is None: start_time = start_time.replace(tzinfo=datetime.timezone.utc)
-    else: start_time = start_time.astimezone(datetime.timezone.utc)
+    if 'answers' not in session or 'start_time' not in session:
+        flash('No answers recorded or session expired. Please start a new test.', 'warning')
+        return redirect(url_for('index'))
+    user_submitted_answers = session.get('answers', {})
+    start_time = datetime.datetime.fromisoformat(session['start_time'])
+    end_time = datetime.datetime.now() # Use .now() for current time
     time_taken_seconds = (end_time - start_time).total_seconds()
-
-    results_summary = calculate_mock_score(user_submitted_answers); results_summary['time_taken_formatted'] = f"{int(time_taken_seconds // 60)}m {int(time_taken_seconds % 60)}s"
-    answers_json_string = json.dumps(user_submitted_answers); score_id_for_template = None
-    try:
-        new_score = Score(user_id=current_user.id, total_score=results_summary['total_score'], math_score=results_summary['math_score'], rw_score=results_summary['rw_score'], correct_count=results_summary['correct_count'], total_answered=results_summary['total_answered'], answers_data=answers_json_string, timestamp=end_time)
-        db.session.add(new_score); db.session.commit(); score_id_for_template = new_score.id
-        flash('Results saved!', 'success')
-    except Exception as e:
-        db.session.rollback(); app.logger.error(f"DB error saving score: {e}", exc_info=True); flash('Error saving score.', 'danger')
-    
+    results_summary = calculate_mock_score(user_submitted_answers)
+    results_summary['time_taken_formatted'] = f"{int(time_taken_seconds // 60)}m {int(time_taken_seconds % 60)}s"
+    answers_json_string = json.dumps(user_submitted_answers)
+    new_score = Score(user_id=current_user.id,
+                      total_score=results_summary['total_score'],
+                      math_score=results_summary['math_score'],
+                      rw_score=results_summary['rw_score'],
+                      correct_count=results_summary['correct_count'],
+                      total_answered=results_summary['total_answered'],
+                      answers_data=answers_json_string,
+                      timestamp=end_time) # Save the actual end time
+    db.session.add(new_score)
+    db.session.commit()
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
     for key in session_keys_to_pop: session.pop(key, None)
-    session.modified = True
-    return render_template('results_page.html', results=results_summary, score_id=score_id_for_template, now=datetime.datetime.utcnow())
+    flash('Your test results have been saved!', 'success')
+    return render_template('results_page.html', results=results_summary, score_id=new_score.id, now=datetime.datetime.utcnow())
 
 @app.route('/download_report/<int:score_id>/<string:report_format>')
 @login_required
 def download_report(score_id, report_format):
-    score_to_download = db.session.get(Score, score_id)
-    if not score_to_download or score_to_download.user_id != current_user.id: flash("Score report not found or access denied.", "danger"); return redirect(request.referrer or url_for('dashboard'))
-    if report_format.lower() == 'csv':
-        try:
-            csv_data = generate_csv_report(score_to_download)
-            return Response(csv_data, mimetype="text/csv", headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"})
-        except Exception as e: app.logger.error(f"CSV generation error: {e}", exc_info=True); flash("Error generating CSV.", "danger"); return redirect(request.referrer or url_for('dashboard'))
-    else: flash(f"Unsupported report format: {report_format}.", "warning"); return redirect(request.referrer or url_for('dashboard'))
+    score_to_download = Score.query.filter_by(id=score_id, user_id=current_user.id).first_or_404()
+    if report_format == 'csv':
+        csv_data = generate_csv_report(score_to_download)
+        return Response(csv_data, mimetype="text/csv", headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"})
+    else:
+        flash("Invalid or unsupported report format requested.", "danger")
+        return redirect(request.referrer or url_for('dashboard'))
 
 @app.route('/reset_test', methods=['POST'])
 @login_required
 def reset_test():
-    app.logger.info(f"User '{current_user.username}' resetting test.")
-    keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in keys_to_pop: session.pop(key, None)
-    session.modified = True
-    flash('Test session reset.', 'info'); return redirect(url_for('index'))
-
-@app.cli.command("init-db")
-def init_db_command():
-    """Creates database tables from models if they don't exist."""
-    try:
-        with app.app_context():
-            app.logger.info("Executing 'flask init-db': Attempting to create database tables...")
-            db.create_all()
-        app.logger.info("'flask init-db' executed successfully: Database tables checked/created.")
-        print("Initialized the database: Tables checked/created.")
-    except Exception as e:
-        error_message = f"Error during 'flask init-db' command: {e}"
-        print(error_message)
-        app.logger.error(error_message, exc_info=True)
+    session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
+    for key in session_keys_to_pop: session.pop(key, None)
+    flash('Test session reset. You can start a new test.', 'info')
+    return redirect(url_for('index'))
 
 if __name__ == '__main__':
-    app.logger.info(f"Starting Flask development server (Debug: {is_debug_env}). Listening on http://{os.environ.get('HOST', '0.0.0.0')}:{os.environ.get('PORT', 5000)}")
-    # db.create_all() was in your original code. For local dev, it's often fine if the DB file doesn't exist.
-    # For production or more controlled setup, `flask init-db` is preferred.
-    # If you keep this, ensure it's within app_context for safety if app is not yet fully configured.
-    if is_debug_env: # Only consider this for local debug convenience
-        with app.app_context():
-             db.create_all() # This will create tables if they don't exist.
-    app.run(host=os.environ.get('HOST', '0.0.0.0'), 
-            port=int(os.environ.get('PORT', 5000)))
+    with app.app_context():
+        db.create_all()
+    app.run(debug=True)

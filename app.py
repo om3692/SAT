@@ -47,7 +47,7 @@ class Score(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- Question Data (Full Original Set - Ensure options are clean) ---
+# --- Question Data (Full Original Set - Options are clean) ---
 QUESTIONS_DATA = {
     "math": [
         {"id": "m1", "module": 1, "text": "If 5x + 6 = 10, what is the value of 5x + 3?", "options": ["1", "3", "4", "7"], "correctAnswer": "7", "topic": "Algebra", "difficulty": "Easy"},

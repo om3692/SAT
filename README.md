@@ -28,5 +28,3 @@ SATInsight is a web-based application designed to help students prepare for the 
 * **Frontend**: HTML, Tailwind CSS, JavaScript
 * **Password Hashing**: Werkzeug security helpers
 * **Authentication**: Flask-Login
-
-## File Structure

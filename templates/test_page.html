@@ -204,10 +204,12 @@
         {% endif %}
                 <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
                     <input type="hidden" name="question_id" value="{{ question.id }}">
+                    {# CSRF token input if you implement CSRF protection in Flask-WTF or similar #}
+                    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> #}
                     <div class="flex items-center justify-between mb-1">
                         <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
                         <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
-                            <input type="checkbox" id="mark_review_cb" name="mark_review" value="true" class="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
+                            <input type="checkbox" id="mark_review_cb" name="mark_review_visual_only" value="true" class="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
                             Mark for Review <i class="far fa-bookmark ml-1"></i>
                         </label>
                     </div>
@@ -216,7 +218,7 @@
                         <div class="space-y-3">
                             {% for option in question.options %}
                             <div>
-                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}> {# 'required' removed #}
+                                <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}>
                                 <label for="option-{{ loop.index0 }}" class="option-label">
                                     <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
                                     <span>{{ option }}</span>
@@ -225,7 +227,7 @@
                             {% endfor %}
                         </div>
                     </fieldset>
-                    {# Hidden submit buttons for explicit actions, triggered by footer buttons #}
+                    {# Hidden submit buttons for explicit actions, triggered by footer buttons or JS #}
                     <button type="submit" name="action" value="next" class="hidden">Next</button>
                     <button type="submit" name="action" value="back" class="hidden">Back</button>
                 </form>
@@ -307,11 +309,10 @@
 
 {% block scripts_extra %}
 <script>
-    // Modal toggle function (already defined in previous corrections, ensure it's correct)
     function toggleModal(modalId, show) {
         const modal = document.getElementById(modalId);
         if (modal) {
-            if (show === undefined) { // Toggle if 'show' is not provided
+            if (show === undefined) {
                 modal.classList.toggle('active');
             } else if (show) {
                 modal.classList.add('active');
@@ -324,26 +325,67 @@
     document.addEventListener('DOMContentLoaded', function() {
         const testDurationSeconds = {{ test_duration_minutes * 60 }};
         const startTimeIso = "{{ start_time_iso }}";
+        const questionForm = document.getElementById('question-form');
+        const questionIdInput = questionForm.querySelector('input[name="question_id"]');
 
         if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
-            // Call the corrected startGlobalTimer from layout.html
-            // It will update 'test-page-timer' and auto-submit 'question-form'
             startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', 'question-form');
         } else {
             const timerDisplay = document.getElementById('test-page-timer');
             if(timerDisplay) timerDisplay.textContent = "Timer N/A";
-            if(!startTimeIso) console.warn("Timer start time (startTimeIso) not provided.");
-            if(!(testDurationSeconds > 0)) console.warn("Test duration is not valid.");
-            if(typeof startGlobalTimer !== 'function') console.error("startGlobalTimer function is not defined.");
         }
 
+        // --- Mark for Review AJAX ---
         const markReviewCheckbox = document.getElementById('mark_review_cb');
-        if (markReviewCheckbox) {
+        if (markReviewCheckbox && questionIdInput) {
             markReviewCheckbox.addEventListener('change', function() {
-                document.getElementById('question-form').submit();
+                const payload = {
+                    question_id: questionIdInput.value,
+                    mark_review: this.checked
+                    // If you add CSRF tokens, include it here:
+                    // csrf_token: document.querySelector('input[name="csrf_token"]').value
+                };
+
+                fetch("{{ url_for('update_mark_review_status') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        // 'X-CSRFToken': payload.csrf_token // Example if using CSRF header
+                    },
+                    body: JSON.stringify(payload)
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        console.log("Mark for review status updated via AJAX.");
+                    } else {
+                        console.error("Failed to update mark for review status:", data.error);
+                        // Optionally, revert checkbox state or show an error to the user
+                        // this.checked = !this.checked; 
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating mark for review status:', error);
+                    // this.checked = !this.checked;
+                });
             });
         }
 
+        // --- Automatic Next Question on Answer Selection ---
+        const answerRadios = document.querySelectorAll('input[name="answer"]');
+        const nextButton = document.querySelector('#question-form button[value="next"]');
+
+        answerRadios.forEach(radio => {
+            radio.addEventListener('change', function() {
+                if (this.checked && nextButton) {
+                    // console.log('Answer selected, clicking next.');
+                    nextButton.click(); // This submits the form with action='next'
+                }
+            });
+        });
+
+
+        // --- Passage Visibility ---
         const hidePassageButton = document.getElementById('hide-passage-button');
         const passageColumn = document.getElementById('passage-column-container');
         const questionColumn = document.getElementById('question-column-container');
@@ -371,11 +413,11 @@
                     localStorage.setItem('isPassageHidden', isPassageHidden);
                 });
             } else {
-                hidePassageButton.style.display = 'none'; // Hide if not R&W or columns not found
+                hidePassageButton.style.display = 'none';
             }
         }
         
-        // Modal Triggers
+        // --- Modal Triggers & Calculator ---
         const directionsButton = document.getElementById('directions-button');
         if (directionsButton) {
             directionsButton.addEventListener('click', function() { toggleModal('directions-modal', true); });
@@ -392,45 +434,38 @@
             }
         }
 
-        // Enhanced Calculator Object (from previous correction)
         window.calculator = {
             displayElement: document.getElementById('calc-display'),
             currentOperand: '0',
             previousOperand: '',
             operation: undefined,
             readyToReset: false,
-
-            clear() { /* ... functional calculator logic ... */ 
+            clear() { 
                 this.currentOperand = '0'; this.previousOperand = ''; this.operation = undefined;
                 this.readyToReset = false; this.updateDisplay();
             },
-            appendNumber(number) { /* ... */
+            appendNumber(number) {
                 if (this.currentOperand.includes('.') && number === '.') return;
-                if (this.currentOperand.length > 15 && !this.readyToReset) return; // Limit length before operation
+                if (this.currentOperand.length > 15 && !this.readyToReset) return;
                 if (this.readyToReset) { this.currentOperand = number; this.readyToReset = false; }
                 else { this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number; }
                 this.updateDisplay();
             },
-            chooseOperation(operation) { /* ... */
+            chooseOperation(operation) {
                 if (this.currentOperand === '' && this.previousOperand === '') return;
                 if (this.currentOperand !== '' && this.previousOperand !== '' && this.operation) { this.compute(); }
                 this.operation = operation;
                 this.previousOperand = this.currentOperand;
                 this.currentOperand = '';
                 this.readyToReset = false;
-                this.updateDisplay(true); // Indicate operation chosen
+                this.updateDisplay(true);
             },
-            compute() { /* ... */
+            compute() {
                 let computation;
                 const prev = parseFloat(this.previousOperand); const current = parseFloat(this.currentOperand);
-                if (isNaN(prev) || (isNaN(current) && this.operation)) return; // Allow computation if current is blank but prev and op exist
-                
-                let effectiveCurrent = isNaN(current) ? prev : current; // For unary operations or if only one number entered before equals
-                if (this.operation) { // Binary operation
-                     if(isNaN(current)) return; // Need two operands for binary op
-                }
-
-
+                if (isNaN(prev) || (isNaN(current) && this.operation)) return;
+                let effectiveCurrent = isNaN(current) ? prev : current;
+                if (this.operation) { if(isNaN(current)) return; }
                 switch (this.operation) {
                     case '+': computation = prev + current; break;
                     case '-': computation = prev - current; break;
@@ -438,22 +473,22 @@
                     case '/':
                         if (current === 0) { this.currentOperand = 'Error'; this.updateDisplay(); this.readyToReset = true; return; }
                         computation = prev / current; break;
-                    default: computation = effectiveCurrent; // If no operation or only one number
+                    default: computation = effectiveCurrent;
                 }
-                this.currentOperand = parseFloat(computation.toPrecision(12)).toString(); // Limit precision
+                this.currentOperand = parseFloat(computation.toPrecision(12)).toString();
                 this.operation = undefined; this.previousOperand = ''; this.readyToReset = true;
                 this.updateDisplay();
             },
-            toggleSign() { /* ... */
+            toggleSign() {
                 if (this.currentOperand === 'Error' || this.currentOperand === '0' || this.currentOperand === '') return;
                 this.currentOperand = (parseFloat(this.currentOperand) * -1).toString(); this.updateDisplay();
             },
-            percent() { /* ... */
+            percent() {
                 if (this.currentOperand === 'Error' || this.currentOperand === '') return;
                 this.currentOperand = (parseFloat(this.currentOperand) / 100).toString();
                 this.updateDisplay(); this.readyToReset = true;
             },
-            updateDisplay(operationChosen = false) { /* ... */
+            updateDisplay(operationChosen = false) {
                 if (!this.displayElement) return;
                 if (operationChosen && this.previousOperand) {
                     this.displayElement.textContent = this.previousOperand;
@@ -464,7 +499,7 @@
                 }
             }
         };
-        if(calculator.displayElement) { calculator.clear(); } // Initialize calculator
+        if(calculator.displayElement) { calculator.clear(); }
     });
 </script>
 {% endblock %}

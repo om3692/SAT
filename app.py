@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify # Added jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -7,7 +7,7 @@ import datetime
 import random
 import io
 import csv
-import json # Required for storing and parsing answers_data
+import json
 
 # --- Application Setup ---
 app = Flask(__name__)
@@ -249,6 +249,37 @@ def start_test():
     initialize_test_session()
     return redirect(url_for('test_question_page', q_idx=0))
 
+# NEW ROUTE for handling mark_review updates via AJAX
+@app.route('/update_mark_review_status', methods=['POST'])
+@login_required
+def update_mark_review_status():
+    if 'test_questions_ids_ordered' not in session:
+        return jsonify(success=False, error="Test session not found"), 400
+        
+    data = request.get_json()
+    question_id = data.get('question_id')
+    is_marked = data.get('mark_review')
+
+    # Basic validation
+    if question_id is None or not isinstance(is_marked, bool):
+        return jsonify(success=False, error="Invalid data"), 400
+
+    # Ensure the question_id is part of the current test to prevent manipulation
+    ordered_ids = session.get('test_questions_ids_ordered', [])
+    if question_id not in ordered_ids:
+        return jsonify(success=False, error="Invalid question ID for this session"), 400
+
+    if 'marked_for_review' not in session:
+        session['marked_for_review'] = {}
+
+    if is_marked:
+        session['marked_for_review'][question_id] = True
+    else:
+        session['marked_for_review'].pop(question_id, None)
+    
+    session.modified = True
+    return jsonify(success=True, message="Mark for review status updated.")
+
 @app.route('/test/question/<int:q_idx>', methods=['GET', 'POST'])
 @login_required
 def test_question_page(q_idx):
@@ -268,18 +299,36 @@ def test_question_page(q_idx):
         return redirect(url_for('index'))
     if request.method == 'POST':
         selected_option = request.form.get('answer')
-        if selected_option: session['answers'][question_id] = selected_option
-        if 'mark_review' in request.form: session['marked_for_review'][question_id] = True
-        elif question_id in session['marked_for_review']: session['marked_for_review'].pop(question_id, None)
-        session.modified = True # Ensure session changes are saved
+        if selected_option: 
+            session['answers'][question_id] = selected_option
+        
+        # Mark for review logic (still useful if JS fails or for non-AJAX posts if any)
+        # For the AJAX update, this part is mostly a fallback.
+        if 'mark_review' in request.form: 
+            session['marked_for_review'][question_id] = (request.form['mark_review'] == 'true')
+        elif question_id in session['marked_for_review'] and 'mark_review' not in request.form and request.form.get('action'):
+            # If 'mark_review' is not in the form AND an action (like next/back) is present,
+            # it means the checkbox was unchecked and submitted via normal form submission.
+            # However, our AJAX call handles unchecking directly.
+            # This specific 'elif' might become less relevant with the AJAX change for marking.
+            # The primary way 'mark_review' status is changed now is via AJAX.
+            # This POST will primarily handle 'answer' and 'action'.
+            pass # AJAX will handle mark status changes primarily
+
+        session.modified = True 
         action = request.form.get('action')
         if action == 'next':
             if q_idx + 1 < len(ordered_ids): return redirect(url_for('test_question_page', q_idx=q_idx + 1))
             else: return redirect(url_for('results'))
         elif action == 'back':
             if q_idx > 0: return redirect(url_for('test_question_page', q_idx=q_idx - 1))
-        # If no specific action (e.g. just marking for review), redirect to the same page
+        
+        # If action is None (which happens if form submitted by JS for mark_review_cb *without* AJAX)
+        # This redirect caused the original reload issue for mark_review.
+        # With AJAX for mark_review, this direct submit from checkbox change should not happen.
+        # This 'return' is now mainly for if something else submits the form without an action.
         return redirect(url_for('test_question_page', q_idx=q_idx))
+
 
     current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
     current_module = question.get('module', 1)
@@ -299,7 +348,7 @@ def results():
         return redirect(url_for('index'))
     user_submitted_answers = session.get('answers', {})
     start_time = datetime.datetime.fromisoformat(session['start_time'])
-    end_time = datetime.datetime.now() # Use .now() for current time
+    end_time = datetime.datetime.now() 
     time_taken_seconds = (end_time - start_time).total_seconds()
     results_summary = calculate_mock_score(user_submitted_answers)
     results_summary['time_taken_formatted'] = f"{int(time_taken_seconds // 60)}m {int(time_taken_seconds % 60)}s"
@@ -311,7 +360,7 @@ def results():
                       correct_count=results_summary['correct_count'],
                       total_answered=results_summary['total_answered'],
                       answers_data=answers_json_string,
-                      timestamp=end_time) # Save the actual end time
+                      timestamp=end_time) 
     db.session.add(new_score)
     db.session.commit()
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']

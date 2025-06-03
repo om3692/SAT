@@ -147,11 +147,10 @@
         const questionForm = document.getElementById('question-form');
         const questionIdInput = questionForm.querySelector('input[name="question_id"]');
 
-        // In test_page.html, within DOMContentLoaded
-if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
-    console.log("Initializing global timer. Duration:", testDurationSeconds, "StartTime:", startTimeIso);
-    startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', null); // Passing null to prevent form submission by timer
-} else {
+        if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
+            console.log("Initializing global timer. Duration:", testDurationSeconds, "StartTime:", startTimeIso);
+            startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', null); 
+        } else {
             const timerDisplay = document.getElementById('test-page-timer');
             if(timerDisplay) timerDisplay.textContent = "Timer N/A";
             console.warn("Timer prerequisites not met. startTimeIso:", startTimeIso, "duration:", testDurationSeconds, "startGlobalTimer defined?", typeof startGlobalTimer);

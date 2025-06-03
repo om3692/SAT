@@ -24,9 +24,8 @@
     .option-input { display: none; }
     .option-letter { width: 24px; height: 24px; border: 1px solid #9ca3af; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 0.75rem; font-size: 0.875rem; font-weight: 500; }
     .option-input:checked + .option-label .option-letter { background-color: #4f46e5; border-color: #4f46e5; color: white; }
-    .tool-button { background: none; border: none; color: #4b5563; padding: 0.5rem; border-radius: 0.25rem; } /* For header buttons */
-    .q-area-tool-button { background: none; border: none; color: #4b5563; padding: 0.25rem; margin-left: 0.5rem; vertical-align: middle; cursor: pointer;} /* For new icon buttons in question area */
-    .q-area-tool-button:hover { color: #1f2937; }
+    .tool-button { background: none; border: none; color: #4b5563; padding: 0.5rem; border-radius: 0.25rem; cursor: pointer; } /* For header buttons */
+    /* .q-area-tool-button class removed as it's no longer needed */
     .nav-button { padding: 0.5rem 1.5rem; border-radius: 0.375rem; font-weight: 500; transition: background-color 0.15s ease-in-out; }
     .nav-button-primary { background-color: #4f46e5; color: white; }
     .nav-button-primary:hover { background-color: #4338ca; }
@@ -80,19 +79,11 @@
                     
                     <div class="flex items-center justify-between mb-1">
                         <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
-                        <div class="flex items-center space-x-2">
-                            <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
-                                <input type="checkbox" id="mark_review_cb" name="mark_review_visual_only" value="true" class="mr-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
-                                Mark for Review <i class="far fa-bookmark ml-1"></i>
-                            </label>
-                            <button type="button" id="q_area_directions_btn" title="Directions" class="q-area-tool-button">
-                                <i class="fas fa-book-open fa-fw"></i>
-                            </button>
-                            <button type="button" id="q_area_more_btn" title="More Options" class="q-area-tool-button">
-                                <i class="fas fa-ellipsis-h fa-fw"></i>
-                            </button>
+                        <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
+                            <input type="checkbox" id="mark_review_cb" name="mark_review_visual_only" value="true" class="mr-1 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
+                            Mark for Review <i class="far fa-bookmark ml-1"></i>
+                        </label>
                         </div>
-                    </div>
 
                     <fieldset>
                         <legend class="text-lg font-medium text-gray-900 mb-4 leading-snug">{{ question.text }}</legend>
@@ -102,7 +93,7 @@
                                 <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}>
                                 <label for="option-{{ loop.index0 }}" class="option-label">
                                     <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
-                                    <span>{{ option }}</span> {# This renders the clean option text #}
+                                    <span>{{ option }}</span>
                                 </label>
                             </div>
                             {% endfor %}
@@ -156,7 +147,6 @@
         const questionForm = document.getElementById('question-form');
         const questionIdInput = questionForm.querySelector('input[name="question_id"]');
 
-        // --- Timer Initialization (FIXED: Does not submit form) ---
         if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
             console.log("Initializing global timer. Duration:", testDurationSeconds, "StartTime:", startTimeIso);
             startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', null); 
@@ -166,7 +156,6 @@
             console.warn("Timer prerequisites not met. startTimeIso:", startTimeIso, "duration:", testDurationSeconds, "startGlobalTimer defined?", typeof startGlobalTimer);
         }
 
-        // --- Mark for Review AJAX (for the checkbox) ---
         const markReviewCheckbox = document.getElementById('mark_review_cb');
         if (markReviewCheckbox && questionIdInput) {
             markReviewCheckbox.addEventListener('change', function() {
@@ -179,11 +168,8 @@
                 .then(data => { data.success ? console.log("Mark for review AJAX success.") : console.error("Mark for review AJAX failed (server):", data.error); })
                 .catch(error => console.error('Mark for Review fetch error:', error));
             });
-        } else {
-            if(!markReviewCheckbox) console.warn("Mark for review checkbox ('mark_review_cb') not found.");
         }
 
-        // --- Answer Selection Logic (no auto-submit) ---
         const answerRadios = document.querySelectorAll('input[name="answer"]');
         answerRadios.forEach(radio => {
             radio.addEventListener('change', function() {
@@ -191,24 +177,8 @@
             });
         });
 
-        // --- Interactive Buttons in Question Area (Directions & More) ---
-        const qAreaDirectionsBtn = document.getElementById('q_area_directions_btn');
-        if (qAreaDirectionsBtn) {
-            qAreaDirectionsBtn.addEventListener('click', function() {
-                console.log("Question Area Directions button clicked.");
-                toggleModal('directions-modal', true);
-            });
-        }
-
-        const qAreaMoreBtn = document.getElementById('q_area_more_btn');
-        if (qAreaMoreBtn) {
-            qAreaMoreBtn.addEventListener('click', function() {
-                console.log("Question Area More button clicked.");
-                alert('More options for this question - feature to be defined.');
-            });
-        }
+        // JavaScript for q_area_directions_btn and q_area_more_btn has been removed.
         
-        // --- Existing UI (Passage Visibility, HEADER Modals, HEADER Calculator) ---
         const hidePassageButton = document.getElementById('hide-passage-button');
         const passageColumn = document.getElementById('passage-column-container');
         const questionColumn = document.getElementById('question-column-container');
@@ -223,7 +193,7 @@
             hidePassageButton.addEventListener('click', function() {isPassageHidden = !isPassageHidden; applyPassageVisibility(isPassageHidden); localStorage.setItem('isPassageHidden', isPassageHidden);});
         } else if (hidePassageButton) { hidePassageButton.style.display = 'none'; }
         
-        const headerDirectionsButton = document.getElementById('directions-button'); // Header button
+        const headerDirectionsButton = document.getElementById('directions-button');
         if (headerDirectionsButton) { 
             headerDirectionsButton.addEventListener('click', function() {
                 console.log("Header Directions button clicked.");
@@ -231,7 +201,7 @@
             }); 
         } else { console.warn("Header Directions button ('directions-button') not found."); }
         
-        const headerCalculatorButton = document.getElementById('calculator-button');  // Header button
+        const headerCalculatorButton = document.getElementById('calculator-button');
         const isMathQuestion = "{{ question.id }}".toLowerCase().startsWith("m");
         console.log("Current question ID for calculator check:", "{{ question.id }}", "Is Math:", isMathQuestion);
 
@@ -251,7 +221,7 @@
             console.warn("Header Calculator button ('calculator-button') NOT FOUND.");
         }
 
-        window.calculator = { /* Your full calculator object as previously provided */ 
+        window.calculator = { /* Your full calculator object */ 
             displayElement: document.getElementById('calc-display'), currentOperand: '0', previousOperand: '', operation: undefined, readyToReset: false,
             clear() { this.currentOperand = '0'; this.previousOperand = ''; this.operation = undefined; this.readyToReset = false; this.updateDisplay(); },
             appendNumber(number) { if (this.currentOperand.includes('.') && number === '.') return; if (this.currentOperand.length > 15 && !this.readyToReset) return; if (this.readyToReset) { this.currentOperand = number; this.readyToReset = false; } else { this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number; } this.updateDisplay(); },

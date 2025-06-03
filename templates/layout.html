@@ -35,7 +35,7 @@
                     </span>
                 </a>
                 <div class="flex items-center space-x-4">
-                    {# This timer display is general. test_page.html has its own. #}
+                    {# This timer display is general. test_page.html has its own specific timer display. #}
                     {# If a timer needs to be shown here, startGlobalTimer should be called targeting this ID. #}
                     <div id="timer-display-header" class="text-lg font-semibold text-indigo-600"></div>
                     {% if current_user.is_authenticated %}
@@ -50,12 +50,15 @@
         </div>
     </header>
 
-    <main class="container mx-auto content-wrapper bg-white rounded-lg shadow-md p-6 my-6"> {# Added my-6 for spacing #}
+    <main class="container mx-auto content-wrapper bg-white rounded-lg shadow-md p-6 my-6">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
                 <div class="p-4 mb-4 text-sm rounded-lg 
-                    {% if category == 'danger' %} bg-red-100 text-red-700 {% elif category == 'success' %} bg-green-100 text-green-700 {% elif category == 'warning' %} bg-yellow-100 text-yellow-700 {% else %} bg-blue-100 text-blue-700 {% endif %}"
+                    {% if category == 'danger' %} bg-red-100 text-red-700 
+                    {% elif category == 'success' %} bg-green-100 text-green-700 
+                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-700 
+                    {% else %} bg-blue-100 text-blue-700 {% endif %}"
                     role="alert">
                     {{ message }}
                 </div>
@@ -75,67 +78,87 @@
                          onerror="this.onerror=null; this.src='https://placehold.co/120x30/FFFFFF/003366?text=Anannt&font=lexend';">
                     <span class="hidden sm:inline-block text-lg text-gray-300">Anannt Education</span>
                 </a>
-                <p class="text-gray-400">&copy; {{ now.year if now else '2024' }} Anannt Education. All rights reserved.</p> {# Added now check #}
+                <p class="text-gray-400">&copy; {{ now.year if now else '2024' }} Anannt Education. All rights reserved.</p>
             </div>
             <p class="text-sm text-gray-500">Empowering students for SAT success.</p>
         </div>
     </footer>
 
     <script>
-        // Global timer logic
-        let testTimerInterval; // Keep a reference to clear if needed
+        // Global timer logic (debug-enhanced version)
+        // Ensure window.testTimerInterval is used if it needs to be accessible/clearable across calls from different script blocks
+        // or if startGlobalTimer might be re-invoked on the same page for a different timer.
+        // Using a simple global `let testTimerInterval;` is usually fine if startGlobalTimer is called once per timer instance.
+        let testTimerInterval; 
 
-        // targetDisplayElementId: ID of the HTML element to show the timer
-        // formToSubmitId (optional): ID of the form to submit when timer ends
         function startGlobalTimer(durationSeconds, startTimeIso, targetDisplayElementId, formToSubmitId = null) {
-            if (testTimerInterval) { // Clear any existing timer associated with this variable
+            console.log(`[startGlobalTimer] Called. Duration: ${durationSeconds}s, StartTimeISO: ${startTimeIso}, TargetID: ${targetDisplayElementId}, FormToSubmit: ${formToSubmitId}`);
+        
+            if (testTimerInterval) { 
                 clearInterval(testTimerInterval);
+                console.log("[startGlobalTimer] Cleared existing timer interval.");
             }
             
             const timerDisplayElement = document.getElementById(targetDisplayElementId);
             if (!timerDisplayElement) {
-                console.error("Timer display element not found:", targetDisplayElementId);
+                console.error(`[startGlobalTimer] CRITICAL: Timer display element NOT FOUND with ID: '${targetDisplayElementId}'`);
                 return;
             }
-
+        
             const startTime = new Date(startTimeIso);
+            if (isNaN(startTime.getTime())) {
+                console.error(`[startGlobalTimer] CRITICAL: Invalid startTimeIso provided: '${startTimeIso}'. Resulting startTime is an invalid Date object.`);
+                timerDisplayElement.textContent = "Error";
+                return;
+            }
+        
             const endTime = new Date(startTime.getTime() + durationSeconds * 1000);
-
+            console.log(`[startGlobalTimer] Calculated - StartTime: ${startTime.toISOString()}, EndTime: ${endTime.toISOString()}`);
+        
             function update() {
                 const now = new Date();
                 const timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
-                
+                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`); // Uncomment for verbose per-second logging
+        
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
+                // Corrected line for displaying text:
                 timerDisplayElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-
+        
                 if (timeRemaining <= 0) {
+                    console.log("[startGlobalTimer update] Time has run out (remaining <= 0). Clearing interval.");
                     clearInterval(testTimerInterval);
-                    timerDisplayElement.textContent = "00:00"; // Explicitly show 00:00
+                    timerDisplayElement.textContent = "00:00"; // Ensure final display is 00:00
+        
                     if (formToSubmitId) {
                         const form = document.getElementById(formToSubmitId);
                         if (form && typeof form.submit === 'function') {
-                            // Prevent multiple submissions if update() somehow gets called again after 0
-                            if (!form.dataset.submitting) { 
-                                form.dataset.submitting = 'true';
-                                console.log("Timer ended. Submitting form:", formToSubmitId);
+                            if (!form.dataset.submittingTimer) { 
+                                form.dataset.submittingTimer = 'true';
+                                console.log(`[startGlobalTimer update] Timer ended. Auto-submitting form: '${formToSubmitId}'.`);
                                 try {
                                     form.submit();
                                 } catch (e) {
-                                    console.error("Error auto-submitting form:", e);
-                                    delete form.dataset.submitting; // Allow retry if submission failed? Or handle differently.
+                                    console.error("[startGlobalTimer update] Error auto-submitting form:", e);
+                                    delete form.dataset.submittingTimer;
                                 }
+                            } else {
+                                console.log(`[startGlobalTimer update] Timer ended, but form '${formToSubmitId}' already marked as submitting by timer.`);
                             }
                         } else if (form) {
-                            console.warn("Form found, but submit is not a function or already submitted (no data-submitting).");
+                            console.warn(`[startGlobalTimer update] Timer ended. Form '${formToSubmitId}' found, but submit is not a function.`);
                         } else {
-                           console.warn("Form to submit not found:", formToSubmitId);
+                            console.warn(`[startGlobalTimer update] Timer ended. Form to submit NOT FOUND: '${formToSubmitId}'.`);
                         }
+                    } else {
+                        console.log("[startGlobalTimer update] Timer ended. No form ID was provided to auto-submit.");
                     }
                 }
             }
-            update(); // Initial call to display timer immediately
-            testTimerInterval = setInterval(update, 1000);
+            
+            console.log("[startGlobalTimer] Initial call to update() and setting setInterval.");
+            update(); // Call immediately to set initial time
+            testTimerInterval = setInterval(update, 1000); // Update every second
         }
     </script>
     {% block scripts_extra %}{% endblock %}

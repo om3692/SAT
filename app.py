@@ -47,7 +47,7 @@ class Score(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- Question Data (Full Original Set) ---
+# --- Question Data (Full Original Set - Ensure options are clean) ---
 QUESTIONS_DATA = {
     "math": [
         {"id": "m1", "module": 1, "text": "If 5x + 6 = 10, what is the value of 5x + 3?", "options": ["1", "3", "4", "7"], "correctAnswer": "7", "topic": "Algebra", "difficulty": "Easy"},
@@ -220,7 +220,6 @@ def test_question_page(q_idx):
             print(f"Action 'back'. Current q_idx: {q_idx}, Prev: {q_idx - 1}")
             if q_idx > 0: print(f"Redirecting to prev q_idx {q_idx - 1}"); return redirect(url_for('test_question_page', q_idx=q_idx - 1))
             else: print("At first q, 'back' received, redirecting to current."); return redirect(url_for('test_question_page', q_idx=q_idx))
-        # Fallback for POST requests that are not 'next' or 'back' (e.g. if timer submitted with no action)
         print(f"Fallback POST: Action '{action}'. Redirecting to current q_idx: {q_idx}"); return redirect(url_for('test_question_page', q_idx=q_idx))
 
     print(f"--- GET for q_idx: {q_idx} ---")

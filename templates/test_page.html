@@ -204,11 +204,12 @@
         {% endif %}
                 <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
                     <input type="hidden" name="question_id" value="{{ question.id }}">
-                    {# CSRF token input if you implement CSRF protection in Flask-WTF or similar #}
-                    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/> #}
+                    {# If using CSRF tokens with Flask-WTF, include it here #}
+                    {# <input type="hidden" name="csrf_token" value="{{ csrf_token() if csrf_token else '' }}"> #}
                     <div class="flex items-center justify-between mb-1">
                         <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
                         <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
+                            {# Changed name to avoid conflict if JS fails; actual submission is via AJAX #}
                             <input type="checkbox" id="mark_review_cb" name="mark_review_visual_only" value="true" class="mr-2 h-4 w-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500" {% if is_marked_for_review %}checked{% endif %}>
                             Mark for Review <i class="far fa-bookmark ml-1"></i>
                         </label>
@@ -227,7 +228,7 @@
                             {% endfor %}
                         </div>
                     </fieldset>
-                    {# Hidden submit buttons for explicit actions, triggered by footer buttons or JS #}
+                    {# Hidden submit buttons for explicit actions, triggered by footer buttons #}
                     <button type="submit" name="action" value="next" class="hidden">Next</button>
                     <button type="submit" name="action" value="back" class="hidden">Back</button>
                 </form>
@@ -309,10 +310,11 @@
 
 {% block scripts_extra %}
 <script>
+    // Modal toggle function
     function toggleModal(modalId, show) {
         const modal = document.getElementById(modalId);
         if (modal) {
-            if (show === undefined) {
+            if (show === undefined) { // Toggle if 'show' is not provided
                 modal.classList.toggle('active');
             } else if (show) {
                 modal.classList.add('active');
@@ -327,12 +329,18 @@
         const startTimeIso = "{{ start_time_iso }}";
         const questionForm = document.getElementById('question-form');
         const questionIdInput = questionForm.querySelector('input[name="question_id"]');
+        // const csrfTokenInput = questionForm.querySelector('input[name="csrf_token"]'); // Uncomment if using CSRF
 
+        // --- Timer Initialization ---
         if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
             startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', 'question-form');
         } else {
             const timerDisplay = document.getElementById('test-page-timer');
             if(timerDisplay) timerDisplay.textContent = "Timer N/A";
+            // Console warnings for debugging timer issues
+            if(!startTimeIso) console.warn("Timer start time (startTimeIso) not provided for test page.");
+            if(!(testDurationSeconds > 0)) console.warn("Test duration is not valid for test page.");
+            if(typeof startGlobalTimer !== 'function') console.error("startGlobalTimer function is not defined (check layout.html).");
         }
 
         // --- Mark for Review AJAX ---
@@ -342,48 +350,45 @@
                 const payload = {
                     question_id: questionIdInput.value,
                     mark_review: this.checked
-                    // If you add CSRF tokens, include it here:
-                    // csrf_token: document.querySelector('input[name="csrf_token"]').value
+                    // csrf_token: csrfTokenInput ? csrfTokenInput.value : null // Uncomment if using CSRF
                 };
 
                 fetch("{{ url_for('update_mark_review_status') }}", {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
-                        // 'X-CSRFToken': payload.csrf_token // Example if using CSRF header
+                        // 'X-CSRFToken': payload.csrf_token // Example for CSRF header; adapt if needed
                     },
                     body: JSON.stringify(payload)
                 })
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) { // Check for HTTP errors
+                        // Try to parse error from server if available
+                        return response.json().then(errData => {
+                            throw new Error(errData.error || `HTTP error! status: ${response.status}`);
+                        }).catch(() => {
+                            // Fallback if no JSON error body
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        });
+                    }
+                    return response.json();
+                })
                 .then(data => {
                     if (data.success) {
                         console.log("Mark for review status updated via AJAX.");
                     } else {
-                        console.error("Failed to update mark for review status:", data.error);
-                        // Optionally, revert checkbox state or show an error to the user
-                        // this.checked = !this.checked; 
+                        console.error("Failed to update mark for review status (server):", data.error || "Unknown error");
+                        // this.checked = !this.checked; // Optionally revert checkbox on failure
                     }
                 })
                 .catch(error => {
-                    console.error('Error updating mark for review status:', error);
-                    // this.checked = !this.checked;
+                    console.error('Error updating mark for review status (network/fetch):', error);
+                    // this.checked = !this.checked; // Optionally revert checkbox on failure
                 });
             });
         }
-
-        // --- Automatic Next Question on Answer Selection ---
-        const answerRadios = document.querySelectorAll('input[name="answer"]');
-        const nextButton = document.querySelector('#question-form button[value="next"]');
-
-        answerRadios.forEach(radio => {
-            radio.addEventListener('change', function() {
-                if (this.checked && nextButton) {
-                    // console.log('Answer selected, clicking next.');
-                    nextButton.click(); // This submits the form with action='next'
-                }
-            });
-        });
-
+        // NOTE: The "Automatic Next Question on Answer Selection" JavaScript block has been removed
+        // as per your confirmed requirement. Users will now manually click the "Next" button.
 
         // --- Passage Visibility ---
         const hidePassageButton = document.getElementById('hide-passage-button');
@@ -413,11 +418,11 @@
                     localStorage.setItem('isPassageHidden', isPassageHidden);
                 });
             } else {
-                hidePassageButton.style.display = 'none';
+                hidePassageButton.style.display = 'none'; 
             }
         }
         
-        // --- Modal Triggers & Calculator ---
+        // --- Modal Triggers ---
         const directionsButton = document.getElementById('directions-button');
         if (directionsButton) {
             directionsButton.addEventListener('click', function() { toggleModal('directions-modal', true); });
@@ -434,38 +439,43 @@
             }
         }
 
+        // --- Calculator Object ---
         window.calculator = {
             displayElement: document.getElementById('calc-display'),
             currentOperand: '0',
             previousOperand: '',
             operation: undefined,
             readyToReset: false,
+
             clear() { 
                 this.currentOperand = '0'; this.previousOperand = ''; this.operation = undefined;
                 this.readyToReset = false; this.updateDisplay();
             },
             appendNumber(number) {
                 if (this.currentOperand.includes('.') && number === '.') return;
-                if (this.currentOperand.length > 15 && !this.readyToReset) return;
+                if (this.currentOperand.length > 15 && !this.readyToReset) return; 
                 if (this.readyToReset) { this.currentOperand = number; this.readyToReset = false; }
                 else { this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number; }
                 this.updateDisplay();
             },
-            chooseOperation(operation) {
+            chooseOperation(operation) { 
                 if (this.currentOperand === '' && this.previousOperand === '') return;
                 if (this.currentOperand !== '' && this.previousOperand !== '' && this.operation) { this.compute(); }
                 this.operation = operation;
                 this.previousOperand = this.currentOperand;
                 this.currentOperand = '';
                 this.readyToReset = false;
-                this.updateDisplay(true);
+                this.updateDisplay(true); 
             },
-            compute() {
+            compute() { 
                 let computation;
                 const prev = parseFloat(this.previousOperand); const current = parseFloat(this.currentOperand);
-                if (isNaN(prev) || (isNaN(current) && this.operation)) return;
-                let effectiveCurrent = isNaN(current) ? prev : current;
-                if (this.operation) { if(isNaN(current)) return; }
+                if (isNaN(prev) || (isNaN(current) && this.operation)) return; 
+                
+                let effectiveCurrent = isNaN(current) ? prev : current; 
+                if (this.operation) { 
+                     if(isNaN(current)) return; 
+                }
                 switch (this.operation) {
                     case '+': computation = prev + current; break;
                     case '-': computation = prev - current; break;
@@ -473,22 +483,22 @@
                     case '/':
                         if (current === 0) { this.currentOperand = 'Error'; this.updateDisplay(); this.readyToReset = true; return; }
                         computation = prev / current; break;
-                    default: computation = effectiveCurrent;
+                    default: computation = effectiveCurrent; 
                 }
-                this.currentOperand = parseFloat(computation.toPrecision(12)).toString();
+                this.currentOperand = parseFloat(computation.toPrecision(12)).toString(); 
                 this.operation = undefined; this.previousOperand = ''; this.readyToReset = true;
                 this.updateDisplay();
             },
-            toggleSign() {
+            toggleSign() { 
                 if (this.currentOperand === 'Error' || this.currentOperand === '0' || this.currentOperand === '') return;
                 this.currentOperand = (parseFloat(this.currentOperand) * -1).toString(); this.updateDisplay();
             },
-            percent() {
+            percent() { 
                 if (this.currentOperand === 'Error' || this.currentOperand === '') return;
                 this.currentOperand = (parseFloat(this.currentOperand) / 100).toString();
                 this.updateDisplay(); this.readyToReset = true;
             },
-            updateDisplay(operationChosen = false) {
+            updateDisplay(operationChosen = false) { 
                 if (!this.displayElement) return;
                 if (operationChosen && this.previousOperand) {
                     this.displayElement.textContent = this.previousOperand;
@@ -499,7 +509,7 @@
                 }
             }
         };
-        if(calculator.displayElement) { calculator.clear(); }
+        if(calculator.displayElement) { calculator.clear(); } // Initialize calculator
     });
 </script>
 {% endblock %}

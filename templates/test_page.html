@@ -6,23 +6,25 @@
 
 {% block head_extra %}
 <style>
-    /* Styles from your original file - condensed for brevity here, ensure you have your full styles */
+    /* Your full CSS styles should be here. I'm showing a condensed version for brevity. */
     .on-test-page > header { display: none !important; }
     .test-container { max-width: 1280px; margin: 0 auto; height: 100vh; display: flex; flex-direction: column; }
     .test-header { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; top:0; z-index: 40; }
     .test-main-content { flex-grow: 1; display: flex; overflow-y: hidden; padding: 1.5rem; }
-    .passage-column { width: 50%; padding-right: 1.5rem; border-right: 1px solid #d1d5db; overflow-y: auto; max-height: calc(100vh - 160px); /* Adjust as needed */ }
+    .passage-column { width: 50%; padding-right: 1.5rem; border-right: 1px solid #d1d5db; overflow-y: auto; max-height: calc(100vh - 160px); }
     .passage-column.hidden { width: 0; opacity: 0; padding-right: 0; border-right: none; overflow: hidden; }
-    .question-column { width: 50%; padding-left: 1.5rem; overflow-y: auto; max-height: calc(100vh - 160px); /* Adjust as needed */ }
+    .question-column { width: 50%; padding-left: 1.5rem; overflow-y: auto; max-height: calc(100vh - 160px); }
     .question-column.full-width { width: 100%; padding-left: 0; }
-    .math-column { width: 100%; max-width: 800px; margin: 0 auto; overflow-y: auto; max-height: calc(100vh - 160px); /* Adjust as needed */ }
+    .math-column { width: 100%; max-width: 800px; margin: 0 auto; overflow-y: auto; max-height: calc(100vh - 160px); }
     .test-footer { background-color: #ffffff; border-top: 1px solid #e5e7eb; padding: 0.75rem 1.5rem; display: flex; justify-content: space-between; align-items: center; position: sticky; bottom: 0; z-index: 40; }
     .progress-bar-container { width: 100%; background-color: #e5e7eb; border-radius: 0.25rem; height: 8px; margin-bottom: 0.5rem; }
     .progress-bar { background-color: #4f46e5; height: 100%; border-radius: 0.25rem; transition: width 0.3s ease-in-out; }
     .option-label { display: flex; align-items: center; padding: 0.75rem 1rem; border: 1px solid #d1d5db; border-radius: 0.375rem; cursor: pointer; transition: all 0.15s ease-in-out; background-color: #fff; }
     .option-input:checked + .option-label { border-color: #4f46e5; background-color: #e0e7ff; color: #3730a3; font-weight: 600; }
-    .option-input { display: none; } /* Hide actual radio button */
-    /* ... other styles from your original file ... */
+    .option-input { display: none; }
+    .option-letter { width: 24px; height: 24px; border: 1px solid #9ca3af; border-radius: 50%; display: inline-flex; justify-content: center; align-items: center; margin-right: 0.75rem; font-size: 0.875rem; font-weight: 500; }
+    .option-input:checked + .option-label .option-letter { background-color: #4f46e5; border-color: #4f46e5; color: white; }
+    /* ... ensure all your original styles are present ... */
 </style>
 {% endblock %}
 
@@ -57,7 +59,7 @@
             </div>
             <div id="question-column-container" class="question-column">
         {% else %}
-            <div class="math-column"> {# Spans full width if no passage #}
+            <div class="math-column">
         {% endif %}
                 <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
                     <input type="hidden" name="question_id" value="{{ question.id }}">
@@ -76,13 +78,12 @@
                                 <input type="radio" id="option-{{ loop.index0 }}" name="answer" value="{{ option }}" class="option-input" {% if option == selected_answer %}checked{% endif %}>
                                 <label for="option-{{ loop.index0 }}" class="option-label">
                                     <span class="option-letter">{{ ['A', 'B', 'C', 'D', 'E'][loop.index0] }}</span>
-                                    <span>{{ option }}</span>
+                                    <span>{{ option }}</span> {# This renders the clean option text #}
                                 </label>
                             </div>
                             {% endfor %}
                         </div>
                     </fieldset>
-                    {# Hidden submit buttons for explicit actions, triggered by footer buttons #}
                     <button type="submit" name="action" value="next" class="hidden">Next</button>
                     <button type="submit" name="action" value="back" class="hidden">Back</button>
                 </form>
@@ -181,6 +182,7 @@
         });
 
         // --- Passage Visibility & Other UI (Modal Triggers, Calculator) ---
+        // (Ensure these are complete as per your original/working version)
         const hidePassageButton = document.getElementById('hide-passage-button');
         const passageColumn = document.getElementById('passage-column-container');
         const questionColumn = document.getElementById('question-column-container');

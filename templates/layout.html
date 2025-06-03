@@ -12,7 +12,7 @@
     <style>
         body { font-family: 'Inter', sans-serif; }
         h1, h2, h3, h4, h5, h6 { font-family: 'Lexend', sans-serif; }
-        .content-wrapper { min-height: calc(100vh - 160px); } /* Adjust 160px based on actual header/footer height */
+        .content-wrapper { min-height: calc(100vh - 160px); }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #f1f1f1; border-radius: 10px;}
         ::-webkit-scrollbar-thumb { background: #888; border-radius: 10px;}
@@ -35,8 +35,6 @@
                     </span>
                 </a>
                 <div class="flex items-center space-x-4">
-                    {# This timer display is general. test_page.html has its own specific timer display. #}
-                    {# If a timer needs to be shown here, startGlobalTimer should be called targeting this ID. #}
                     <div id="timer-display-header" class="text-lg font-semibold text-indigo-600"></div>
                     {% if current_user.is_authenticated %}
                         <a href="{{ url_for('dashboard') }}" class="text-gray-600 hover:text-indigo-600 font-medium transition-colors">Dashboard</a>
@@ -86,9 +84,6 @@
 
     <script>
         // Global timer logic (debug-enhanced version)
-        // Ensure window.testTimerInterval is used if it needs to be accessible/clearable across calls from different script blocks
-        // or if startGlobalTimer might be re-invoked on the same page for a different timer.
-        // Using a simple global `let testTimerInterval;` is usually fine if startGlobalTimer is called once per timer instance.
         let testTimerInterval; 
 
         function startGlobalTimer(durationSeconds, startTimeIso, targetDisplayElementId, formToSubmitId = null) {
@@ -118,17 +113,16 @@
             function update() {
                 const now = new Date();
                 const timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
-                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`); // Uncomment for verbose per-second logging
+                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`); 
         
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
-                // Corrected line for displaying text:
                 timerDisplayElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
         
                 if (timeRemaining <= 0) {
                     console.log("[startGlobalTimer update] Time has run out (remaining <= 0). Clearing interval.");
                     clearInterval(testTimerInterval);
-                    timerDisplayElement.textContent = "00:00"; // Ensure final display is 00:00
+                    timerDisplayElement.textContent = "00:00"; 
         
                     if (formToSubmitId) {
                         const form = document.getElementById(formToSubmitId);
@@ -157,8 +151,8 @@
             }
             
             console.log("[startGlobalTimer] Initial call to update() and setting setInterval.");
-            update(); // Call immediately to set initial time
-            testTimerInterval = setInterval(update, 1000); // Update every second
+            update(); 
+            testTimerInterval = setInterval(update, 1000); 
         }
     </script>
     {% block scripts_extra %}{% endblock %}

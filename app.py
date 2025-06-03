@@ -4,7 +4,7 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from werkzeug.security import generate_password_hash, check_password_hash
 import os
 import datetime
-import random
+import random # random was imported but not used, can be kept or removed
 import io
 import csv
 import json
@@ -12,7 +12,7 @@ import json
 # --- Application Setup ---
 app = Flask(__name__)
 app.config['SECRET_KEY'] = os.urandom(24)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sattest.db'
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///sattest.db' # As per original file
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
@@ -115,18 +115,46 @@ def calculate_mock_score(answers):
             correct_count += 1
             if is_math: math_correct += 1
             else: rw_correct += 1
-    mock_math_score = 200 + int((math_correct / max(1, math_total)) * 600)
-    mock_rw_score = 200 + int((rw_correct / max(1, rw_total)) * 600)
-    mock_total_score = mock_math_score + mock_rw_score
+    
+    # Ensure division by zero doesn't occur if a section has no questions or no answered questions
+    math_score_ratio = (math_correct / max(1, math_total)) if math_total > 0 else 0
+    rw_score_ratio = (rw_correct / max(1, rw_total)) if rw_total > 0 else 0
+        
+    mock_math_score = 200 + int(math_score_ratio * 600)
+    mock_rw_score = 200 + int(rw_score_ratio * 600)
+    
     mock_math_score = max(200, min(800, mock_math_score))
     mock_rw_score = max(200, min(800, mock_rw_score))
-    mock_total_score = max(400, min(1600, mock_total_score))
+    
+    mock_total_score = mock_math_score + mock_rw_score
+    mock_total_score = max(400, min(1600, mock_total_score)) # Ensure total score is also within bounds
+
     weaknesses = []
     recommendations = []
-    if (math_correct / max(1, math_total)) < 0.6: weaknesses.append("Algebra Concepts (Math)"); recommendations.append("Review foundational algebra topics.")
-    if (rw_correct / max(1, rw_total)) < 0.6: weaknesses.append("Grammar Rules (Reading & Writing)"); recommendations.append("Focus on Standard English Conventions.")
-    if not weaknesses: weaknesses.append("Good overall performance!"); recommendations.append("Explore advanced topics.")
-    return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "weaknesses": weaknesses, "recommendations": recommendations}
+    # Adjusted weakness/recommendation logic based on ratios
+    if math_total > 0 and math_score_ratio < 0.6: 
+        weaknesses.append("Algebra Concepts (Math)")
+        recommendations.append("Review foundational algebra topics.")
+    if rw_total > 0 and rw_score_ratio < 0.6: 
+        weaknesses.append("Grammar Rules (Reading & Writing)")
+        recommendations.append("Focus on Standard English Conventions.")
+    
+    if not weaknesses and (math_total > 0 or rw_total > 0) : # Add general positive feedback if no specific weaknesses
+        recommendations.append("Continue practicing across all topics to maintain your skills.")
+    elif not weaknesses and math_total == 0 and rw_total == 0: # No questions answered or no questions in test
+        weaknesses.append("No answers to analyze.")
+        recommendations.append("Complete the test to get a performance analysis.")
+
+
+    return {
+        "total_score": mock_total_score, 
+        "math_score": mock_math_score, 
+        "rw_score": mock_rw_score, 
+        "correct_count": correct_count, 
+        "total_answered": len(answers), 
+        "weaknesses": weaknesses, 
+        "recommendations": recommendations
+    }
 
 def generate_csv_report(score_obj):
     output = io.StringIO()
@@ -139,7 +167,7 @@ def generate_csv_report(score_obj):
         writer.writerow([
             "N/A", "N/A", "N/A", "N/A", "N/A", "No detailed answer data",
             "N/A", "N/A", "N/A", "N/A", "N/A", score_obj.id if score_obj else "N/A",
-            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj else "N/A"
+            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj and score_obj.timestamp else "N/A"
         ])
         output.seek(0)
         return output.getvalue()
@@ -149,18 +177,18 @@ def generate_csv_report(score_obj):
         writer.writerow([
             "N/A", "N/A", "N/A", "N/A", "N/A", "Error decoding answers",
             "N/A", "N/A", "N/A", "N/A", "N/A", score_obj.id,
-            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+            score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj and score_obj.timestamp else "N/A"
         ])
         output.seek(0)
         return output.getvalue()
 
-    test_date_str = score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S')
+    test_date_str = score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj.timestamp else "N/A"
     score_id_val = score_obj.id
     question_sequence_number = 0
 
-    for q_id in ORDERED_QUESTION_IDS:
+    for q_id in ORDERED_QUESTION_IDS: # Assuming ORDERED_QUESTION_IDS is globally available and correct
         question_sequence_number += 1
-        question_detail = ALL_QUESTIONS_MAP.get(q_id)
+        question_detail = ALL_QUESTIONS_MAP.get(q_id) # ALL_QUESTIONS_MAP should also be available
         if not question_detail:
             writer.writerow([
                 question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing",
@@ -168,12 +196,15 @@ def generate_csv_report(score_obj):
                 "[]", score_id_val, test_date_str
             ])
             continue
-        section_val = "Math" if any(q_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
+        
+        # Determine section based on QUESTIONS_DATA structure
+        section_val = "Math" if any(q_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"
         skill_type_val = question_detail.get("topic", "N/A")
         user_answer_val = user_answers_dict.get(q_id, "Not Answered")
         correct_answer_val = question_detail.get("correctAnswer", "N/A")
         outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect"
         if user_answer_val == "Not Answered": outcome_val = "Not Answered"
+        
         module_val = question_detail.get("module", "N/A")
         difficulty_val = question_detail.get("difficulty", "N/A")
         question_text_val = question_detail.get("text", "N/A")
@@ -181,6 +212,7 @@ def generate_csv_report(score_obj):
         if passage_text:
              question_text_val = f"[PASSAGE-BASED Q:{question_sequence_number}] {question_text_val}"
         all_options_json = json.dumps(question_detail.get("options", []))
+        
         writer.writerow([
             question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val,
             q_id, module_val, difficulty_val, question_text_val, all_options_json, score_id_val, test_date_str
@@ -257,14 +289,15 @@ def update_mark_review_status():
         return jsonify(success=False, error="Test session not found"), 400
         
     data = request.get_json()
+    if not data: # Ensure data is not None
+        return jsonify(success=False, error="No data received"), 400
+
     question_id = data.get('question_id')
     is_marked = data.get('mark_review')
 
-    # Basic validation
     if question_id is None or not isinstance(is_marked, bool):
-        return jsonify(success=False, error="Invalid data"), 400
+        return jsonify(success=False, error="Invalid data: question_id or mark_review status missing/invalid"), 400
 
-    # Ensure the question_id is part of the current test to prevent manipulation
     ordered_ids = session.get('test_questions_ids_ordered', [])
     if question_id not in ordered_ids:
         return jsonify(success=False, error="Invalid question ID for this session"), 400
@@ -286,59 +319,69 @@ def test_question_page(q_idx):
     if 'test_questions_ids_ordered' not in session or not session['test_questions_ids_ordered']:
         flash('Test session not found or expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
+    
     ordered_ids = session['test_questions_ids_ordered']
+    
     if not 0 <= q_idx < len(ordered_ids):
         current_q_idx_in_session = session.get('current_question_index', 0)
-        flash('Invalid question number.', 'danger')
+        # Ensure current_q_idx_in_session is also valid before redirecting
+        if not (0 <= current_q_idx_in_session < len(ordered_ids)):
+            current_q_idx_in_session = 0 # Default to first question if session index is also bad
+        flash('Invalid question number accessed.', 'danger')
         return redirect(url_for('test_question_page', q_idx=current_q_idx_in_session))
+    
     session['current_question_index'] = q_idx
     question_id = ordered_ids[q_idx]
     question = ALL_QUESTIONS_MAP.get(question_id)
+    
     if not question:
-        flash('Error: Question not found.', 'danger')
-        return redirect(url_for('index'))
+        flash('Error: Question data not found for the current question ID.', 'danger')
+        # Redirect to a safe place, like the first question or dashboard
+        return redirect(url_for('test_question_page', q_idx=0) if ordered_ids else url_for('index'))
+
     if request.method == 'POST':
         selected_option = request.form.get('answer')
         if selected_option: 
-            session['answers'][question_id] = selected_option
+            session.setdefault('answers', {})[question_id] = selected_option
         
-        # Mark for review logic (still useful if JS fails or for non-AJAX posts if any)
-        # For the AJAX update, this part is mostly a fallback.
-        if 'mark_review' in request.form: 
-            session['marked_for_review'][question_id] = (request.form['mark_review'] == 'true')
-        elif question_id in session['marked_for_review'] and 'mark_review' not in request.form and request.form.get('action'):
-            # If 'mark_review' is not in the form AND an action (like next/back) is present,
-            # it means the checkbox was unchecked and submitted via normal form submission.
-            # However, our AJAX call handles unchecking directly.
-            # This specific 'elif' might become less relevant with the AJAX change for marking.
-            # The primary way 'mark_review' status is changed now is via AJAX.
-            # This POST will primarily handle 'answer' and 'action'.
-            pass # AJAX will handle mark status changes primarily
-
+        # This part handles 'mark_review' if submitted via traditional form POST (e.g., if JS fails)
+        # However, primary update for 'mark_review' is now via the AJAX route.
+        # The form input 'mark_review_visual_only' is not used for data submission here.
+        # The AJAX call updates session['marked_for_review'] directly.
+        
         session.modified = True 
         action = request.form.get('action')
-        if action == 'next':
-            if q_idx + 1 < len(ordered_ids): return redirect(url_for('test_question_page', q_idx=q_idx + 1))
-            else: return redirect(url_for('results'))
-        elif action == 'back':
-            if q_idx > 0: return redirect(url_for('test_question_page', q_idx=q_idx - 1))
         
-        # If action is None (which happens if form submitted by JS for mark_review_cb *without* AJAX)
-        # This redirect caused the original reload issue for mark_review.
-        # With AJAX for mark_review, this direct submit from checkbox change should not happen.
-        # This 'return' is now mainly for if something else submits the form without an action.
+        if action == 'next':
+            if q_idx + 1 < len(ordered_ids): 
+                return redirect(url_for('test_question_page', q_idx=q_idx + 1))
+            else: 
+                return redirect(url_for('results'))
+        elif action == 'back':
+            if q_idx > 0: 
+                return redirect(url_for('test_question_page', q_idx=q_idx - 1))
+        
+        # Fallback if no specific action (should ideally not be reached if JS is working for mark_review)
         return redirect(url_for('test_question_page', q_idx=q_idx))
 
-
-    current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA['math']) else "Reading & Writing"
-    current_module = question.get('module', 1)
+    current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"
+    current_module = question.get('module', 1) # Default to module 1 if not specified
+    
+    # Ensure 'marked_for_review' and 'answers' in session are initialized if not present
     is_marked = session.get('marked_for_review', {}).get(question_id, False)
     selected_answer = session.get('answers', {}).get(question_id)
-    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS,
+    
+    return render_template('test_page.html', 
+                           question=question, 
+                           question_number=q_idx + 1, 
+                           total_questions=TOTAL_QUESTIONS,
                            current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
-                           start_time_iso=session['start_time'], test_duration_minutes=TEST_DURATION_MINUTES,
-                           now=datetime.datetime.utcnow(), is_marked_for_review=is_marked,
-                           selected_answer=selected_answer, q_idx=q_idx)
+                           start_time_iso=session.get('start_time', datetime.datetime.now().isoformat()), # Provide a default if not in session
+                           test_duration_minutes=TEST_DURATION_MINUTES,
+                           now=datetime.datetime.utcnow(), 
+                           is_marked_for_review=is_marked,
+                           selected_answer=selected_answer, 
+                           q_idx=q_idx)
 
 @app.route('/results')
 @login_required
@@ -346,13 +389,29 @@ def results():
     if 'answers' not in session or 'start_time' not in session:
         flash('No answers recorded or session expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
+    
     user_submitted_answers = session.get('answers', {})
-    start_time = datetime.datetime.fromisoformat(session['start_time'])
+    start_time_iso = session.get('start_time')
+    
+    if not start_time_iso: # Handle case where start_time might be missing
+        flash('Test start time missing. Cannot calculate results accurately.', 'danger')
+        # Provide a default or redirect. For now, default to 0 time taken.
+        start_time = datetime.datetime.now() 
+    else:
+        try:
+            start_time = datetime.datetime.fromisoformat(start_time_iso)
+        except ValueError:
+            flash('Invalid test start time format. Cannot calculate results accurately.', 'danger')
+            start_time = datetime.datetime.now() # Fallback
+
     end_time = datetime.datetime.now() 
     time_taken_seconds = (end_time - start_time).total_seconds()
+    
     results_summary = calculate_mock_score(user_submitted_answers)
     results_summary['time_taken_formatted'] = f"{int(time_taken_seconds // 60)}m {int(time_taken_seconds % 60)}s"
+    
     answers_json_string = json.dumps(user_submitted_answers)
+    
     new_score = Score(user_id=current_user.id,
                       total_score=results_summary['total_score'],
                       math_score=results_summary['math_score'],
@@ -363,8 +422,12 @@ def results():
                       timestamp=end_time) 
     db.session.add(new_score)
     db.session.commit()
+    
+    # Clear sensitive test session data
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in session_keys_to_pop: session.pop(key, None)
+    for key in session_keys_to_pop: 
+        session.pop(key, None)
+        
     flash('Your test results have been saved!', 'success')
     return render_template('results_page.html', results=results_summary, score_id=new_score.id, now=datetime.datetime.utcnow())
 
@@ -374,18 +437,39 @@ def download_report(score_id, report_format):
     score_to_download = Score.query.filter_by(id=score_id, user_id=current_user.id).first_or_404()
     if report_format == 'csv':
         csv_data = generate_csv_report(score_to_download)
-        return Response(csv_data, mimetype="text/csv", headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"})
+        return Response(
+            csv_data, 
+            mimetype="text/csv", 
+            headers={"Content-disposition": f"attachment; filename=sat_detailed_report_{score_id}.csv"}
+        )
+    # Add PDF or other formats here if needed
+    # elif report_format == 'pdf':
+    #     pass 
     else:
         flash("Invalid or unsupported report format requested.", "danger")
-        return redirect(request.referrer or url_for('dashboard'))
+        return redirect(request.referrer or url_for('dashboard')) # Redirect to previous page or dashboard
 
 @app.route('/reset_test', methods=['POST'])
 @login_required
 def reset_test():
     session_keys_to_pop = ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']
-    for key in session_keys_to_pop: session.pop(key, None)
+    for key in session_keys_to_pop: 
+        session.pop(key, None)
     flash('Test session reset. You can start a new test.', 'info')
     return redirect(url_for('index'))
+
+# Error Handling (Optional but good practice)
+@app.errorhandler(404)
+def page_not_found(e):
+    return render_template('error_page.html', error_code=404, error_name="Page Not Found", 
+                           error_message="Sorry, the page you are looking for does not exist."), 404
+
+@app.errorhandler(500)
+def internal_server_error(e):
+    # Log the error e if you have logging setup
+    return render_template('error_page.html', error_code=500, error_name="Internal Server Error",
+                           error_message="We are experiencing some technical difficulties. Please try again later."), 500
+
 
 if __name__ == '__main__':
     with app.app_context():

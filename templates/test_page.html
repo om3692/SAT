@@ -172,7 +172,6 @@
         // --- Answer Selection Logic ---
         // NO JavaScript here to auto-submit form or click "Next" on answer radio change.
         // User must manually click the "Next" button in the footer.
-        // We can add a log to confirm an answer is selected if needed for debugging user interaction.
         const answerRadios = document.querySelectorAll('input[name="answer"]');
         answerRadios.forEach(radio => {
             radio.addEventListener('change', function() {
@@ -182,7 +181,6 @@
         });
 
         // --- Passage Visibility & Other UI (Modal Triggers, Calculator) ---
-        // (Ensure these are complete as per your original/working version)
         const hidePassageButton = document.getElementById('hide-passage-button');
         const passageColumn = document.getElementById('passage-column-container');
         const questionColumn = document.getElementById('question-column-container');
@@ -208,7 +206,7 @@
             else { calculatorButton.style.display = 'none'; }
         }
 
-        window.calculator = { /* Your full calculator object */ 
+        window.calculator = { /* Ensure your full calculator object is here */ 
             displayElement: document.getElementById('calc-display'), currentOperand: '0', previousOperand: '', operation: undefined, readyToReset: false,
             clear() { this.currentOperand = '0'; this.previousOperand = ''; this.operation = undefined; this.readyToReset = false; this.updateDisplay(); },
             appendNumber(number) { if (this.currentOperand.includes('.') && number === '.') return; if (this.currentOperand.length > 15 && !this.readyToReset) return; if (this.readyToReset) { this.currentOperand = number; this.readyToReset = false; } else { this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number; } this.updateDisplay(); },

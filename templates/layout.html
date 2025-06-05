@@ -52,10 +52,10 @@
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 {% for category, message in messages %}
-                <div class="p-4 mb-4 text-sm rounded-lg 
-                    {% if category == 'danger' %} bg-red-100 text-red-700 
-                    {% elif category == 'success' %} bg-green-100 text-green-700 
-                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-700 
+                <div class="p-4 mb-4 text-sm rounded-lg
+                    {% if category == 'danger' %} bg-red-100 text-red-700
+                    {% elif category == 'success' %} bg-green-100 text-green-700
+                    {% elif category == 'warning' %} bg-yellow-100 text-yellow-700
                     {% else %} bg-blue-100 text-blue-700 {% endif %}"
                     role="alert">
                     {{ message }}
@@ -84,50 +84,50 @@
 
     <script>
         // Global timer logic (debug-enhanced version from Turn 38)
-        let testTimerInterval; 
+        let testTimerInterval;
 
         function startGlobalTimer(durationSeconds, startTimeIso, targetDisplayElementId, formToSubmitId = null) {
             console.log(`[startGlobalTimer] Called. Duration: ${durationSeconds}s, StartTimeISO: ${startTimeIso}, TargetID: ${targetDisplayElementId}, FormToSubmit: ${formToSubmitId}`);
-        
-            if (testTimerInterval) { 
+
+            if (testTimerInterval) {
                 clearInterval(testTimerInterval);
                 console.log("[startGlobalTimer] Cleared existing timer interval.");
             }
-            
+
             const timerDisplayElement = document.getElementById(targetDisplayElementId);
             if (!timerDisplayElement) {
                 console.error(`[startGlobalTimer] CRITICAL: Timer display element NOT FOUND with ID: '${targetDisplayElementId}'`);
                 return;
             }
-        
+
             const startTime = new Date(startTimeIso);
             if (isNaN(startTime.getTime())) {
                 console.error(`[startGlobalTimer] CRITICAL: Invalid startTimeIso provided: '${startTimeIso}'. Resulting startTime is an invalid Date object.`);
                 timerDisplayElement.textContent = "Error";
                 return;
             }
-        
+
             const endTime = new Date(startTime.getTime() + durationSeconds * 1000);
             console.log(`[startGlobalTimer] Calculated - StartTime: ${startTime.toISOString()}, EndTime: ${endTime.toISOString()}`);
-        
+
             function update() {
                 const now = new Date();
                 const timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
-                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`); 
-        
+                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`);
+
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;
                 timerDisplayElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        
+
                 if (timeRemaining <= 0) {
                     console.log("[startGlobalTimer update] Time has run out (remaining <= 0). Clearing interval.");
                     clearInterval(testTimerInterval);
-                    timerDisplayElement.textContent = "00:00"; 
-        
+                    timerDisplayElement.textContent = "00:00";
+
                     if (formToSubmitId) {
                         const form = document.getElementById(formToSubmitId);
                         if (form && typeof form.submit === 'function') {
-                            if (!form.dataset.submittingTimer) { 
+                            if (!form.dataset.submittingTimer) {
                                 form.dataset.submittingTimer = 'true';
                                 console.log(`[startGlobalTimer update] Timer ended. Auto-submitting form: '${formToSubmitId}'.`);
                                 try {
@@ -149,10 +149,10 @@
                     }
                 }
             }
-            
+
             console.log("[startGlobalTimer] Initial call to update() and setting setInterval.");
-            update(); 
-            testTimerInterval = setInterval(update, 1000); 
+            update();
+            testTimerInterval = setInterval(update, 1000);
         }
     </script>
     {% block scripts_extra %}{% endblock %}

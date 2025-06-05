@@ -76,7 +76,7 @@
         {% endif %}
                 <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
                     <input type="hidden" name="question_id" value="{{ question.id }}">
-                    
+
                     <div class="flex items-center justify-between mb-1">
                         <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
                         <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">
@@ -106,12 +106,12 @@
     </div>
 
     <div class="test-footer">
-        <button onclick="document.querySelector('#question-form button[value=\'back\']').click();" 
+        <button onclick="document.querySelector('#question-form button[value=\'back\']').click();"
                 class="nav-button nav-button-secondary" {% if q_idx == 0 %}disabled aria-disabled="true" style="opacity:0.5; cursor:not-allowed;"{% endif %}>
             <i class="fas fa-chevron-left mr-1"></i> Back
         </button>
         <div class="text-sm font-medium text-gray-700">Question {{ question_number }} of {{ total_questions }}</div>
-        <button onclick="console.log('Footer Next button clicked'); document.querySelector('#question-form button[value=\'next\']').click();" 
+        <button onclick="console.log('Footer Next button clicked'); document.querySelector('#question-form button[value=\'next\']').click();"
                 class="nav-button nav-button-primary">
             Next <i class="fas fa-chevron-right ml-1"></i>
         </button>
@@ -149,7 +149,7 @@
 
         if (typeof startGlobalTimer === 'function' && startTimeIso && testDurationSeconds > 0) {
             console.log("Initializing global timer. Duration:", testDurationSeconds, "StartTime:", startTimeIso);
-            startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', null); 
+            startGlobalTimer(testDurationSeconds, startTimeIso, 'test-page-timer', null);
         } else {
             const timerDisplay = document.getElementById('test-page-timer');
             if(timerDisplay) timerDisplay.textContent = "Timer N/A";
@@ -178,7 +178,7 @@
         });
 
         // JavaScript for q_area_directions_btn and q_area_more_btn has been removed.
-        
+
         const hidePassageButton = document.getElementById('hide-passage-button');
         const passageColumn = document.getElementById('passage-column-container');
         const questionColumn = document.getElementById('question-column-container');
@@ -188,19 +188,19 @@
             function applyPassageVisibility(hidden) {
                 if (hidden) { passageColumn.classList.add('hidden'); questionColumn.classList.add('full-width'); hidePassageButton.textContent = 'Show';}
                 else { passageColumn.classList.remove('hidden'); questionColumn.classList.remove('full-width'); hidePassageButton.textContent = 'Hide';}
-            } 
+            }
             applyPassageVisibility(isPassageHidden);
             hidePassageButton.addEventListener('click', function() {isPassageHidden = !isPassageHidden; applyPassageVisibility(isPassageHidden); localStorage.setItem('isPassageHidden', isPassageHidden);});
         } else if (hidePassageButton) { hidePassageButton.style.display = 'none'; }
-        
+
         const headerDirectionsButton = document.getElementById('directions-button');
-        if (headerDirectionsButton) { 
+        if (headerDirectionsButton) {
             headerDirectionsButton.addEventListener('click', function() {
                 console.log("Header Directions button clicked.");
-                toggleModal('directions-modal', true); 
-            }); 
+                toggleModal('directions-modal', true);
+            });
         } else { console.warn("Header Directions button ('directions-button') not found."); }
-        
+
         const headerCalculatorButton = document.getElementById('calculator-button');
         const isMathQuestion = "{{ question.id }}".toLowerCase().startsWith("m");
         console.log("Current question ID for calculator check:", "{{ question.id }}", "Is Math:", isMathQuestion);
@@ -211,7 +211,7 @@
                 headerCalculatorButton.style.display = 'inline-block';
                 headerCalculatorButton.addEventListener('click', function() {
                     console.log("Header Calculator button clicked. Attempting to open 'calculator-modal'.");
-                    toggleModal('calculator-modal', true); 
+                    toggleModal('calculator-modal', true);
                 });
             } else {
                 headerCalculatorButton.style.display = 'none';
@@ -221,7 +221,7 @@
             console.warn("Header Calculator button ('calculator-button') NOT FOUND.");
         }
 
-        window.calculator = { /* Your full calculator object */ 
+        window.calculator = { /* Your full calculator object */
             displayElement: document.getElementById('calc-display'), currentOperand: '0', previousOperand: '', operation: undefined, readyToReset: false,
             clear() { this.currentOperand = '0'; this.previousOperand = ''; this.operation = undefined; this.readyToReset = false; this.updateDisplay(); },
             appendNumber(number) { if (this.currentOperand.includes('.') && number === '.') return; if (this.currentOperand.length > 15 && !this.readyToReset) return; if (this.readyToReset) { this.currentOperand = number; this.readyToReset = false; } else { this.currentOperand = this.currentOperand === '0' && number !== '.' ? number : this.currentOperand + number; } this.updateDisplay(); },
@@ -231,9 +231,9 @@
             percent() { if (this.currentOperand === 'Error' || this.currentOperand === '') return; this.currentOperand = (parseFloat(this.currentOperand) / 100).toString(); this.updateDisplay(); this.readyToReset = true; },
             updateDisplay(operationChosen = false) { if (!this.displayElement) return; if (operationChosen && this.previousOperand) { this.displayElement.textContent = this.previousOperand; } else if (this.currentOperand.length > 16) { this.displayElement.textContent = parseFloat(this.currentOperand).toExponential(7); } else { this.displayElement.textContent = this.currentOperand || this.previousOperand || '0'; } }
         };
-        if(calculator.displayElement) { 
+        if(calculator.displayElement) {
             console.log("Calculator object initialized.");
-            calculator.clear(); 
+            calculator.clear();
         } else {
             console.warn("Calculator display element ('calc-display') not found.");
         }

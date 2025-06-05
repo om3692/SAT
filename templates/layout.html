@@ -113,7 +113,7 @@
             function update() {
                 const now = new Date();
                 const timeRemaining = Math.max(0, Math.floor((endTime - now) / 1000));
-                // console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`);
+                console.log(`[startGlobalTimer update] Tick - Now: ${now.toISOString()}, TimeRemaining: ${timeRemaining}s`);
 
                 const minutes = Math.floor(timeRemaining / 60);
                 const seconds = timeRemaining % 60;

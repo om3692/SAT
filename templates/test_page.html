@@ -74,9 +74,8 @@
         {% else %}
             <div class="math-column">
         {% endif %}
-                <form id="question-form" action="{{ url_for('test_question_page', q_idx=q_idx) }}" method="POST" class="space-y-5">
-                    <input type="hidden" name="question_id" value="{{ question.id }}">
-
+      <form id="question-form" action="{{ url_for('test_question_page', q_num=q_num) }}" method="POST" class="space-y-5">
+              <input type="hidden" name="question_id" value="{{ question.id }}">
                     <div class="flex items-center justify-between mb-1">
                         <span class="bg-gray-700 text-white text-xs font-semibold px-2 py-1 rounded">Question {{ question_number }}</span>
                         <label for="mark_review_cb" class="flex items-center text-sm text-gray-600 cursor-pointer hover:text-indigo-600">

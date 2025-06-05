@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify # Ensure jsonify is imported
+from flask import Flask, render_template, request, redirect, url_for, session, flash, Response, jsonify
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -94,7 +94,7 @@ TEST_DURATION_MINUTES = 30
 def initialize_test_session():
     session['current_question_index'] = 0
     session['answers'] = {}
-    session['start_time'] = datetime.datetime.utcnow().isoformat() + "Z"  # MODIFIED LINE
+    session['start_time'] = datetime.datetime.utcnow().isoformat() + "Z"
     session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:]
     session['marked_for_review'] = {}
 
@@ -226,24 +226,52 @@ def test_question_page(q_idx):
     current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"
     current_module = question.get('module', 1); is_marked = session.get('marked_for_review', {}).get(question_id, False); selected_answer = session.get('answers', {}).get(question_id)
     print(f"Rendering for q_idx: {q_idx}, q_id: {question_id}. Marked: {is_marked}, Selected: {selected_answer}")
-    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS, current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}", 
-                           start_time_iso=session.get('start_time', datetime.datetime.utcnow().isoformat() + "Z"), # MODIFIED LINE
+    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS, current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
+                           start_time_iso=session.get('start_time', datetime.datetime.utcnow().isoformat() + "Z"),
                            test_duration_minutes=TEST_DURATION_MINUTES, now=datetime.datetime.utcnow(), is_marked_for_review=is_marked, selected_answer=selected_answer, q_idx=q_idx)
 
 @app.route('/results')
 @login_required
 def results():
-    if 'answers' not in session or 'start_time' not in session: flash('No answers or session expired.', 'warning'); return redirect(url_for('index'))
-    user_answers = session.get('answers', {}); start_time_iso = session.get('start_time')
-    try: start_time = datetime.datetime.fromisoformat(start_time_iso if start_time_iso else (datetime.datetime.utcnow().isoformat() + "Z")) # Ensure fallback is also UTC
-    except ValueError: start_time = datetime.datetime.utcnow() # Fallback to current UTC time
-    end_time = datetime.datetime.utcnow(); # Use UTC for end time as well
-    time_taken = (end_time - start_time).total_seconds(); summary = calculate_mock_score(user_answers)
-    summary['time_taken_formatted'] = f"{int(time_taken // 60)}m {int(time_taken % 60)}s"; answers_json = json.dumps(user_answers)
-    score = Score(user_id=current_user.id, total_score=summary['total_score'], math_score=summary['math_score'], rw_score=summary['rw_score'], correct_count=summary['correct_count'], total_answered=summary['total_answered'], answers_data=answers_json, timestamp=end_time) # timestamp is now UTC
-    db.session.add(score); db.session.commit()
-    for key in ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']: session.pop(key, None)
-    flash('Test results saved!', 'success'); return render_template('results_page.html', results=summary, score_id=score.id, now=datetime.datetime.utcnow())
+    if 'answers' not in session or 'start_time' not in session:
+        flash('No answers or session expired.', 'warning')
+        return redirect(url_for('index'))
+
+    user_answers = session.get('answers', {})
+    start_time_iso = session.get('start_time')
+
+    try:
+        if start_time_iso and start_time_iso.endswith('Z'):
+            start_time_iso = start_time_iso[:-1]
+        
+        start_time = datetime.datetime.fromisoformat(start_time_iso)
+    except (ValueError, TypeError):
+        start_time = datetime.datetime.utcnow()
+
+    end_time = datetime.datetime.utcnow()
+    time_taken = (end_time - start_time).total_seconds()
+
+    summary = calculate_mock_score(user_answers)
+    summary['time_taken_formatted'] = f"{int(time_taken // 60)}m {int(time_taken % 60)}s"
+    answers_json = json.dumps(user_answers)
+    
+    score = Score(user_id=current_user.id,
+                  total_score=summary['total_score'],
+                  math_score=summary['math_score'],
+                  rw_score=summary['rw_score'],
+                  correct_count=summary['correct_count'],
+                  total_answered=summary['total_answered'],
+                  answers_data=answers_json,
+                  timestamp=end_time)
+                  
+    db.session.add(score)
+    db.session.commit()
+    
+    for key in ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']:
+        session.pop(key, None)
+        
+    flash('Test results saved!', 'success')
+    return render_template('results_page.html', results=summary, score_id=score.id, now=datetime.datetime.utcnow())
 
 @app.route('/download_report/<int:score_id>/<string:report_format>')
 @login_required

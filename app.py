@@ -175,7 +175,9 @@ def dashboard(): user_scores = Score.query.filter_by(user_id=current_user.id).or
 
 @app.route('/start_test', methods=['POST'])
 @login_required
-def start_test(): initialize_test_session(); return redirect(url_for('test_question_page', q_idx=0))
+def start_test():
+    initialize_test_session()
+    return redirect(url_for('test_question_page', q_num=1))
 
 @app.route('/update_mark_review_status', methods=['POST'])
 @login_required
@@ -192,43 +194,74 @@ def update_mark_review_status():
     else: session['marked_for_review'].pop(question_id, None)
     session.modified = True; print(f"DEBUG: Mark for review status updated for {question_id}: {is_marked}"); return jsonify(success=True)
 
-@app.route('/test/question/<int:q_idx>', methods=['GET', 'POST'])
+@app.route('/test/question/<int:q_num>', methods=['GET', 'POST'])
 @login_required
-def test_question_page(q_idx):
-    print(f"\n--- test_question_page CALLED for q_idx: {q_idx}, Method: {request.method} ---")
+def test_question_page(q_num):
+    print(f"\n--- test_question_page CALLED for q_num: {q_num}, Method: {request.method} ---")
     if 'test_questions_ids_ordered' not in session or not session['test_questions_ids_ordered']:
-        flash('Test session not found or expired. Please start a new test.', 'warning'); print("DEBUG: Test session/ordered_ids not found at top."); return redirect(url_for('index'))
+        flash('Test session not found or expired. Please start a new test.', 'warning')
+        return redirect(url_for('index'))
+
     ordered_ids = session['test_questions_ids_ordered']
+    q_idx = q_num - 1
+
     if not 0 <= q_idx < len(ordered_ids):
-        curr_idx = session.get('current_question_index', 0); print(f"DEBUG: Invalid q_idx {q_idx}. current_q_idx_in_session: {curr_idx}, len: {len(ordered_ids)}")
-        if not (0 <= curr_idx < len(ordered_ids)): curr_idx = 0
-        flash('Invalid question number.', 'danger'); return redirect(url_for('test_question_page', q_idx=curr_idx))
-    session['current_question_index'] = q_idx; question_id = ordered_ids[q_idx]; question = ALL_QUESTIONS_MAP.get(question_id)
-    if not question: flash('Error: Question data not found.', 'danger'); print(f"DEBUG: Question data not found for q_id: {question_id}."); return redirect(url_for('test_question_page', q_idx=0))
+        flash('Invalid question number.', 'danger')
+        return redirect(url_for('test_question_page', q_num=1))
+
+    session['current_question_index'] = q_idx
+    question_id = ordered_ids[q_idx]
+    question = ALL_QUESTIONS_MAP.get(question_id)
+
+    if not question:
+        flash('Error: Question data not found.', 'danger')
+        return redirect(url_for('test_question_page', q_num=1))
 
     if request.method == 'POST':
-        print(f"--- POST for q_idx: {q_idx} ---"); print(f"Request form data: {request.form}")
+        print(f"--- POST for q_num: {q_num} ---"); print(f"Request form data: {request.form}")
         selected_option = request.form.get('answer'); action = request.form.get('action')
         print(f"Selected answer: {selected_option}, Action: {action}")
-        if selected_option: session.setdefault('answers', {})[question_id] = selected_option; print(f"Saved answer for {question_id}: {selected_option}")
+        if selected_option:
+            session.setdefault('answers', {})[question_id] = selected_option
+            print(f"Saved answer for {question_id}: {selected_option}")
         session.modified = True
-        if action == 'next':
-            print(f"Action 'next'. Current q_idx: {q_idx}, Next: {q_idx + 1}, Total: {len(ordered_ids)}")
-            if q_idx + 1 < len(ordered_ids): print(f"Redirecting to next q_idx {q_idx + 1}"); return redirect(url_for('test_question_page', q_idx=q_idx + 1))
-            else: print("Last question. Redirecting to results."); return redirect(url_for('results'))
-        elif action == 'back':
-            print(f"Action 'back'. Current q_idx: {q_idx}, Prev: {q_idx - 1}")
-            if q_idx > 0: print(f"Redirecting to prev q_idx {q_idx - 1}"); return redirect(url_for('test_question_page', q_idx=q_idx - 1))
-            else: print("At first q, 'back' received, redirecting to current."); return redirect(url_for('test_question_page', q_idx=q_idx))
-        print(f"Fallback POST: Action '{action}'. Redirecting to current q_idx: {q_idx}"); return redirect(url_for('test_question_page', q_idx=q_idx))
 
-    print(f"--- GET for q_idx: {q_idx} ---")
+        if action == 'next':
+            print(f"Action 'next'. Current q_num: {q_num}, Next: {q_num + 1}, Total: {len(ordered_ids)}")
+            if q_num < len(ordered_ids):
+                return redirect(url_for('test_question_page', q_num=q_num + 1))
+            else:
+                print("Last question. Redirecting to results.")
+                return redirect(url_for('results'))
+        elif action == 'back':
+            print(f"Action 'back'. Current q_num: {q_num}, Prev: {q_num - 1}")
+            if q_num > 1:
+                return redirect(url_for('test_question_page', q_num=q_num - 1))
+            else:
+                return redirect(url_for('test_question_page', q_num=q_num))
+        
+        print(f"Fallback POST: Action '{action}'. Redirecting to current q_num: {q_num}")
+        return redirect(url_for('test_question_page', q_num=q_num))
+
+    print(f"--- GET for q_num: {q_num} ---")
     current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"
-    current_module = question.get('module', 1); is_marked = session.get('marked_for_review', {}).get(question_id, False); selected_answer = session.get('answers', {}).get(question_id)
+    current_module = question.get('module', 1)
+    is_marked = session.get('marked_for_review', {}).get(question_id, False)
+    selected_answer = session.get('answers', {}).get(question_id)
     print(f"Rendering for q_idx: {q_idx}, q_id: {question_id}. Marked: {is_marked}, Selected: {selected_answer}")
-    return render_template('test_page.html', question=question, question_number=q_idx + 1, total_questions=TOTAL_QUESTIONS, current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
+    
+    return render_template('test_page.html',
+                           question=question,
+                           question_number=q_num,
+                           total_questions=TOTAL_QUESTIONS,
+                           current_section=f"Section {1 if current_section_name == 'Math' else 2}, Module {current_module}: {current_section_name}",
                            start_time_iso=session.get('start_time', datetime.datetime.utcnow().isoformat() + "Z"),
-                           test_duration_minutes=TEST_DURATION_MINUTES, now=datetime.datetime.utcnow(), is_marked_for_review=is_marked, selected_answer=selected_answer, q_idx=q_idx)
+                           test_duration_minutes=TEST_DURATION_MINUTES,
+                           now=datetime.datetime.utcnow(),
+                           is_marked_for_review=is_marked,
+                           selected_answer=selected_answer,
+                           q_idx=q_idx,
+                           q_num=q_num)
 
 @app.route('/results')
 @login_required

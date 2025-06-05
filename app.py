@@ -94,7 +94,7 @@ TEST_DURATION_MINUTES = 30
 def initialize_test_session():
     session['current_question_index'] = 0
     session['answers'] = {}
-    session['start_time'] = datetime.datetime.now().isoformat()
+session['start_time'] = datetime.datetime.utcnow().isoformat() + "Z"
     session['test_questions_ids_ordered'] = ORDERED_QUESTION_IDS[:]
     session['marked_for_review'] = {}
 

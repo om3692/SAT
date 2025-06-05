@@ -47,49 +47,151 @@ class Score(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- Question Data (Full Original Set - Options are clean) ---
+# --- NEW QUESTION DATA (from SAT Practice Test #6) ---
 QUESTIONS_DATA = {
-    "math": [
-        {"id": "m1", "module": 1, "text": "If 5x + 6 = 10, what is the value of 5x + 3?", "options": ["1", "3", "4", "7"], "correctAnswer": "7", "topic": "Algebra", "difficulty": "Easy"},
-        {"id": "m2", "module": 1, "text": "A rectangular garden is 10 feet long and 5 feet wide. What is its area in square feet?", "options": ["15", "25", "50", "100"], "correctAnswer": "50", "topic": "Geometry", "difficulty": "Easy"},
-        {"id": "m3", "module": 1, "text": "What is 20% of 200?", "options": ["20", "40", "50", "100"], "correctAnswer": "40", "topic": "Problem-Solving and Data Analysis", "difficulty": "Easy"},
-        {"id": "m4", "module": 1, "text": "If a circle has a radius of 3, what is its circumference? (Use π ≈ 3.14)", "options": ["9.42", "18.84", "28.26", "6.00"], "correctAnswer": "18.84", "topic": "Geometry", "difficulty": "Medium"},
-        {"id": "m5", "module": 1, "text": "Solve for y: 3(y - 2) = 9", "options": ["3", "4", "5", "6"], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium"},
-        {"id": "m6", "module": 1, "text": "A car travels 120 miles in 2 hours. What is its average speed in miles per hour?", "options": ["50 mph", "60 mph", "70 mph", "80 mph"], "correctAnswer": "60 mph", "topic": "Problem-Solving and Data Analysis", "difficulty": "Easy"},
-        {"id": "m7", "module": 1, "text": "What is the next number in the sequence: 2, 5, 8, 11, ...?", "options": ["12", "13", "14", "15"], "correctAnswer": "14", "topic": "Algebra", "difficulty": "Easy"},
-        {"id": "m8", "module": 1, "text": "If a triangle has angles 45°, 45°, and x°, what is the value of x?", "options": ["45°", "60°", "90°", "100°"], "correctAnswer": "90°", "topic": "Geometry", "difficulty": "Medium"},
-        {"id": "m9", "module": 1, "text": "Simplify the expression: (2^3) * (2^2)", "options": ["2^1", "2^5", "2^6", "4^5"], "correctAnswer": "2^5", "topic": "Algebra (Exponents)", "difficulty": "Medium"},
-        {"id": "m10", "module": 1, "text": "A survey of 50 students found that 30 like apples and 25 like bananas. If 10 students like both, how many students like neither?", "options": ["0", "5", "10", "15"], "correctAnswer": "5", "topic": "Problem-Solving and Data Analysis (Sets)", "difficulty": "Hard"}
-    ],
     "reading_writing": [
-        {"id": "rw1", "module": 1, "passage": "The following is an excerpt from a short story. \n'The old house stood on a hill overlooking the town. It had been empty for years, and locals said it was haunted. But Sarah, a young journalist, was determined to uncover its secrets.'", "text": "What is Sarah's profession?", "options": ["Ghost hunter", "Historian", "Journalist", "Librarian"], "correctAnswer": "Journalist", "topic": "Information and Ideas", "difficulty": "Easy"},
-        {"id": "rw2", "module": 1, "text": "Which of the following is a complete sentence? \n'Running through the park on a sunny day.'", "options": ["Yes, it is.", "No, it is a fragment.", "It depends on context.", "It is a command."], "correctAnswer": "No, it is a fragment.", "topic": "Standard English Conventions", "difficulty": "Easy"},
-        {"id": "rw3", "module": 1, "text": "Choose the word that best completes the sentence: \n'The chef was known for his ______ use of spices, creating dishes that were both flavorful and unique.'", "options": ["sparing", "liberal", "excessive", "minimal"], "correctAnswer": "liberal", "topic": "Craft and Structure (Words in Context)", "difficulty": "Medium"},
-        {"id": "rw4", "module": 1, "passage": "The city council debated the new proposal for public transportation. Proponents argued it would reduce traffic congestion, while opponents worried about the cost.", "text": "What is the main conflict described?", "options": ["Traffic vs. Pedestrians", "Cost vs. Benefit of new transport", "Council members' personal disagreements", "Old vs. New transportation methods"], "correctAnswer": "Cost vs. Benefit of new transport", "topic": "Information and Ideas", "difficulty": "Medium"},
-        {"id": "rw5", "module": 1, "text": "Identify the grammatical error, if any: \n'Each of the students are responsible for their own materials.'", "options": ["'Each of the students'", "'are responsible'", "'their own materials'", "No error"], "correctAnswer": "'are responsible'", "topic": "Standard English Conventions (Subject-Verb Agreement)", "difficulty": "Medium"},
-        {"id": "rw6", "module": 1, "text": "Which choice most effectively combines the sentences at the underlined portion? \n'The cat jumped. It landed softly on the mat.'", "options": ["jumped, it landed", "jumped and landed", "jumped, but it landed", "jumped; it landed"], "correctAnswer": "jumped and landed", "topic": "Expression of Ideas (Sentence Combining)", "difficulty": "Easy"},
-        {"id": "rw7", "module": 1, "passage": "The scientist conducted many experiments. She hoped to find a cure for the disease. Her dedication was admirable.", "text": "The word 'admirable' in the last sentence most nearly means:", "options": ["questionable", "praiseworthy", "common", "ineffective"], "correctAnswer": "praiseworthy", "topic": "Craft and Structure (Words in Context)", "difficulty": "Easy"},
-        {"id": "rw8", "module": 1, "text": "Which of the following sentences uses punctuation correctly? \n'The items needed are: eggs milk and bread.'", "options": ["The items needed are: eggs, milk, and bread.", "The items needed are eggs, milk, and bread.", "The items needed are, eggs, milk, and bread.", "The items needed are eggs milk and bread."], "correctAnswer": "The items needed are: eggs, milk, and bread.", "topic": "Standard English Conventions (Punctuation)", "difficulty": "Medium"},
-        {"id": "rw9", "module": 1, "passage": "Many people believe that coffee provides an energy boost. However, excessive consumption can lead to negative side effects such as jitteriness and insomnia.", "text": "What is the primary purpose of the second sentence?", "options": ["To support the first sentence", "To contradict the first sentence", "To provide a solution", "To introduce a contrasting point"], "correctAnswer": "To introduce a contrasting point", "topic": "Information and Ideas (Purpose)", "difficulty": "Medium"},
-        {"id": "rw10", "module": 1, "text": "Choose the correct pronoun: \n'Neither the teacher nor the students knew ______ way to the auditorium.'", "options": ["his", "her", "its", "their"], "correctAnswer": "their", "topic": "Standard English Conventions (Pronoun Agreement)", "difficulty": "Medium"},
-        {"id": "rw11", "module": 1, "passage": "The invention of the printing press in the 15th century revolutionized the spread of information. Before its advent, books were painstakingly copied by hand, making them rare and expensive. The printing press allowed for mass production, making knowledge more accessible to a wider audience.", "text": "According to the passage, what was a primary consequence of the printing press?", "options": ["Books became more artistic.", "Fewer people learned to read.", "Information became more widespread.", "Hand-copying of books increased."], "correctAnswer": "Information became more widespread.", "topic": "Information and Ideas (Detail)", "difficulty": "Easy"},
-        {"id": "rw12", "module": 1, "text": "Which word, if any, is misspelled in the following sentence? \n'She recieved a beautiful bouqet of flowers for her acheivement.'", "options": ["recieved", "bouqet", "acheivement", "No error"], "correctAnswer": "recieved", "topic": "Standard English Conventions (Spelling)", "difficulty": "Easy"},
-        {"id": "rw13", "module": 1, "text": "The author implies that the main character's decision was: \n(Passage context needed for a real question - this is a placeholder for question type)", "options": ["Rash and impulsive", "Carefully considered", "Forced upon him", "Ultimately beneficial"], "correctAnswer": "Carefully considered", "topic": "Information and Ideas (Inference)", "difficulty": "Hard"},
-        {"id": "rw14", "module": 1, "passage": "The artist's style was unique, characterized by bold colors and abstract shapes. Many critics praised her originality, though some found her work too unconventional.", "text": "The word 'unconventional' in this context means:", "options": ["Traditional", "Not conforming to accepted standards", "Widely popular", "Simple and plain"], "correctAnswer": "Not conforming to accepted standards", "topic": "Craft and Structure (Words in Context)", "difficulty": "Medium"},
-        {"id": "rw15", "module": 1, "text": "Which sentence demonstrates the correct use of an apostrophe? \n'The dogs bowl was empty.'", "options": ["The dog's bowl was empty.", "The dogs' bowl was empty (if multiple dogs share one bowl).", "The dogs bowls were empty.", "Both A and B could be correct depending on context."], "correctAnswer": "Both A and B could be correct depending on context.", "topic": "Standard English Conventions (Apostrophes)", "difficulty": "Medium"},
-        {"id": "rw16", "module": 1, "passage": "The documentary explored the impact of climate change on polar bear populations. It highlighted melting ice caps and the resulting loss of hunting grounds.", "text": "What is the main topic of the documentary described?", "options": ["Polar bear behavior", "The history of Arctic exploration", "The effects of climate change on polar bears", "Ice cap formation"], "correctAnswer": "The effects of climate change on polar bears", "topic": "Information and Ideas (Main Topic)", "difficulty": "Easy"},
-        {"id": "rw17", "module": 1, "text": "The phrase 'to burn the midnight oil' means:", "options": ["To cause a fire late at night", "To work late into the night", "To waste resources", "To celebrate excessively"], "correctAnswer": "To work late into the night", "topic": "Craft and Structure (Idioms)", "difficulty": "Easy"},
-        {"id": "rw18", "module": 1, "text": "Which sentence is grammatically correct? \n'Me and him went to the store.'", "options": ["Me and him went to the store.", "Him and I went to the store.", "He and I went to the store.", "I and he went to the store."], "correctAnswer": "He and I went to the store.", "topic": "Standard English Conventions (Pronoun Case)", "difficulty": "Medium"},
-        {"id": "rw19", "module": 1, "passage": "The novel's protagonist is a young detective trying to solve a complex mystery. The author uses vivid imagery and suspenseful plot twists to keep the reader engaged.", "text": "What literary devices does the author use, according to the passage?", "options": ["Metaphor and simile", "Foreshadowing and irony", "Vivid imagery and suspenseful plot twists", "Alliteration and onomatopoeia"], "correctAnswer": "Vivid imagery and suspenseful plot twists", "topic": "Craft and Structure (Literary Devices)", "difficulty": "Medium"},
-        {"id": "rw20", "module": 1, "text": "The word 'ubiquitous' means:", "options": ["Rare and hard to find", "Present, appearing, or found everywhere", "Expensive and luxurious", "Temporary and fleeting"], "correctAnswer": "Present, appearing, or found everywhere", "topic": "Craft and Structure (Vocabulary)", "difficulty": "Hard"}
+        {
+            "id": "rw1", "module": 1, "passage": None,
+            "text": "Though not closely related, the hedgehog tenrecs of Madagascar share basic ______ true hedgehogs, including protective spines, pointed snouts, and small body size-traits the two groups of mammals independently developed in response to equivalent roles in their respective habitats.",
+            "options": ["examples of", "concerns about", "indications of", "similarities with"],
+            "correctAnswer": "similarities with", "topic": "Words in Context", "difficulty": "Easy"
+        },
+        {
+            "id": "rw2", "module": 1,
+            "passage": "The following text is adapted from James Baldwin's 1956 novel Giovanni's Room. The narrator is riding in a taxi down a street lined with food vendors and shoppers in Paris, France.\n'The multitude of Paris seems to be dressed in blue every day but Sunday, when, for the most part, they put on an unbelievably festive black. Here they were now, in blue, disputing, every inch, our passage, with their wagons, handtrucks, their bursting baskets carried at an angle steeply self-confident on the back.'",
+            "text": "As used in the text, what does the word \"disputing\" most nearly mean?",
+            "options": ["Arguing about", "Disapproving of", "Asserting possession of", "Providing resistance to"],
+            "correctAnswer": "Providing resistance to", "topic": "Words in Context", "difficulty": "Medium"
+        },
+        {
+            "id": "rw3", "module": 1,
+            "passage": "When classical pianist Martha Argerich performs, it appears as if the music is coming to her spontaneously. She's highly skilled technically, but because of how freely she plays and her willingness to take risks, she seems relaxed and natural. Her apparent ease, however, is due to a tremendous amount of preparation. Despite Argerich's experience and virtuosity, she never takes for granted that she knows a piece of music. Instead, she approaches the music as if encountering it for the first time and tries to understand it anew.",
+            "text": "Which choice best states the main purpose of the text?",
+            "options": ["To provide details about how Argerich identifies which pieces of music she will perform", "To assert that Argerich's performances look effortless because of how she prepares for them", "To discuss the kinds of music Argerich feels most comfortable encountering for the first time", "To describe the unique way that Argerich approaches music she hasn't performed before"],
+            "correctAnswer": "To assert that Argerich's performances look effortless because of how she prepares for them", "topic": "Main Purpose", "difficulty": "Medium"
+        },
+        {
+            "id": "rw4", "module": 1,
+            "passage": "Text 1\nIn 1954 George Balanchine choreographed a production of The Nutcracker... But the show is stuck in the past, with an old-fashioned story and references, so it should no longer be produced. Ballet needs to create new traditions if it wants to stay relevant to contemporary audiences.\nText 2\nThe Nutcracker is outdated, but it should be kept because it's a holiday favorite and provides substantial income... Although it can be behind the times, there are creative ways to update the show... Her show Hot Chocolate Nutcracker combines ballet, tap, hip-hop, and other styles...",
+            "text": "Based on the texts, how would the author of Text 2 most likely respond to the underlined claim in Text 1?",
+            "options": ["By questioning the idea that the story of The Nutcracker is stuck in the past...", "By agreeing that contemporary audiences have largely stopped going...", "By pointing out that most dance companies could increase their incomes...", "By suggesting that dance companies should consider offering revised versions of The Nutcracker instead of completely rejecting the show"],
+            "correctAnswer": "By suggesting that dance companies should consider offering revised versions of The Nutcracker instead of completely rejecting the show", "topic": "Comparing Texts", "difficulty": "Medium"
+        },
+        {
+            "id": "rw5", "module": 1,
+            "passage": "| Year | Number of cars produced | Number of companies producing cars |\n| :--- | :--- | :--- |\n| 1910 | 123,990 | 320 |\n| 1915 | 548,139 | 224 |\n| 1920 | 1,651,625 | 197 |\n| 1925 | 3,185,881 | 80 |",
+            "text": "The student notes that, according to the table, from 1910 to 1925 ______",
+            "options": ["the number of cars produced increased but the number of companies producing cars decreased.", "both the number of cars produced and the number of companies producing cars remained unchanged.", "the number of cars produced decreased but the number of companies producing cars remained unchanged.", "both the number of cars produced and the number of companies producing cars increased."],
+            "correctAnswer": "the number of cars produced increased but the number of companies producing cars decreased.", "topic": "Data Interpretation", "difficulty": "Easy"
+        },
+        {
+            "id": "rw6", "module": 1,
+            "passage": "External shopping cues are a type of marketing that uses obvious messaging... The researchers explain that trying to find items in new locations causes shoppers to move through more of the store, exposing them to more products and increasing the likelihood that they'll buy an item they hadn't planned on purchasing.",
+            "text": "Which response from a survey given to shoppers who made a purchase at a retail store best supports the researchers' explanation?",
+            "options": ["\"I needed to buy some cleaning supplies, but they weren't in their regular place. While I was looking for them, I saw this interesting notebook and decided to buy it, too.\"", "\"I didn't buy everything on my shopping list today. I couldn't find a couple of the items in the store, even though I looked all over for them.\"", "\"The store sent me a coupon for a new brand of soup, so I came here to find out what kinds of soup that brand offers. I decided to buy a few cans because I had the coupon.\"", "\"This store is larger than one that's closer to where I live, and it carries more products. I came here to buy some things that the other store doesn't always have.\""],
+            "correctAnswer": "\"I needed to buy some cleaning supplies, but they weren't in their regular place. While I was looking for them, I saw this interesting notebook and decided to buy it, too.\"", "topic": "Supporting Claims", "difficulty": "Medium"
+        },
+        {
+            "id": "rw7", "module": 1,
+            "passage": "To investigate potential cognitive benefits of taking leave from work...researchers concluded that longer leave times might not confer a greater cognitive benefit than shorter leave times do. [A bar chart shows that for the second and third tests, the '2-4 days leave' group had higher attentiveness scores than the '1-5 weeks leave' group.]",
+            "text": "Which choice best describes data from the graph that support the researchers' conclusion?",
+            "options": ["...participants who took 2-4 days of leave had higher average attentiveness scores than did those who took no leave...", "...participants who took 2-4 days of leave had lower average attentiveness scores than...", "In both the second and third test administrations, participants who took 2-4 days of leave had higher average attentiveness scores than did participants who took 1-5 weeks of leave.", "...participants who took 2-4 days of leave had higher average attentiveness scores than did those who took no leave."],
+            "correctAnswer": "In both the second and third test administrations, participants who took 2-4 days of leave had higher average attentiveness scores than did participants who took 1-5 weeks of leave.", "topic": "Data Interpretation", "difficulty": "Hard"
+        },
+        {
+            "id": "rw8", "module": 1, "passage": None,
+            "text": "______ by businessman William A.G. Brown, the saloon was known to offer elegant accommodations and an inclusive environment.",
+            "options": ["Created", "Creates", "Creating", "Create"],
+            "correctAnswer": "Created", "topic": "Grammar", "difficulty": "Easy"
+        },
+        {
+            "id": "rw9", "module": 1, "passage": None,
+            "text": "It's an example of antimetabole, a writing technique that ______ emphasis by repeating a statement in a reversed order.",
+            "options": ["create", "are creating", "have created", "creates"],
+            "correctAnswer": "creates", "topic": "Grammar", "difficulty": "Easy"
+        },
+        {
+            "id": "rw10", "module": 1, "passage": None,
+            "text": "A ray diagram reveals how this ______ the hole's small size restricts light to a single ray, all light passing through the hole can only arrive at a single destination, eliminating diffraction and ensuring a clear image.",
+            "options": ["works because", "works. Because", "works, it's because", "works: it's because"],
+            "correctAnswer": "works because", "topic": "Punctuation", "difficulty": "Medium"
+        },
+        {
+            "id": "rw11", "module": 1, "passage": None,
+            "text": "Before it unveiled a massive new gallery in 2009, the Art Institute of Chicago was only able to display about 5% of its art collection. ______ the museum is able to display close to 30% of its collection.",
+            "options": ["Additionally,", "For example,", "Nevertheless,", "Today,"],
+            "correctAnswer": "Today,", "topic": "Logical Transitions", "difficulty": "Easy"
+        },
+        {
+            "id": "rw12", "module": 1,
+            "passage": "Notes:\n- In the 1930s, the Imperial Sugar Cane Institute in India sought to limit the country's dependence on imported sugarcane.\n- The institute enlisted botanist Janaki Ammal to breed a local variety of sugarcane.\n- She crossbred the imported sugarcane species Saccharum officinarum with grasses native to India.\n- She succeeded in creating sugarcane hybrids well suited to India's climate.",
+            "text": "The student wants to emphasize Janaki Ammal's achievement. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
+            "options": ["By crossbreeding the imported sugarcane species Saccharum officinarum with grasses native to India, Ammal succeeded in creating sugarcane hybrids well suited to India's climate.", "In the 1930s, the Imperial Sugar Cane Institute, which enlisted Ammal, sought to limit dependence on imported sugarcane.", "Ammal was enlisted by the Imperial Sugar Cane Institute at a time when a local variety of sugarcane needed to be produced.", "As part of efforts to breed a local variety of sugarcane, an imported sugarcane species called Saccharum officinarum was crossbred with grasses native to India."],
+            "correctAnswer": "By crossbreeding the imported sugarcane species Saccharum officinarum with grasses native to India, Ammal succeeded in creating sugarcane hybrids well suited to India's climate.", "topic": "Rhetorical Synthesis", "difficulty": "Medium"
+        }
+    ],
+    "math": [
+        {
+            "id": "m1", "module": 1, "passage": None, "text": "(p + 3) + 8 = 10\nWhat value of p is the solution to the given equation?",
+            "options": ["-1", "5", "15", "21"], "correctAnswer": "-1", "topic": "Algebra", "difficulty": "Easy"
+        },
+        {
+            "id": "m2", "module": 1, "passage": "An object was launched upward from a platform. The graph shown models the height above ground, y, in meters, of the object x seconds after it was launched. [A parabola opening downwards, starting at (0, 10), reaching a vertex near (2.5, 28), and hitting the x-axis around 4.5.]",
+            "text": "For which of the following intervals of time was the height of the object increasing for the entire interval?",
+            "options": ["From x=0 to x=2", "From x=0 to x=4", "From x=2 to x=3", "From x=3 to x=4"],
+            "correctAnswer": "From x=0 to x=2", "topic": "Data Interpretation", "difficulty": "Easy"
+        },
+        {
+            "id": "m3", "module": 1, "passage": None, "text": "How many yards are equivalent to 1,116 inches? (1 yard = 36 inches)",
+            "options": [], "correctAnswer": "31", "topic": "Problem Solving", "difficulty": "Easy"
+        },
+        {
+            "id": "m4", "module": 1, "passage": "The function P gives the estimated number of marine mammals in a certain area, where t is the number of years since a study began.",
+            "text": "P(t) = 1,800(1.02)ᵗ\nWhat is the best interpretation of P(0) = 1,800 in this context?",
+            "options": ["The estimated number of marine mammals in the area was 102 when the study began.", "The estimated number of marine mammals in the area was 1,800 when the study began.", "The estimated number of marine mammals in the area increased by 102 each year during the study.", "The estimated number of marine mammals in the area increased by 1,800 each year during the study."],
+            "correctAnswer": "The estimated number of marine mammals in the area was 1,800 when the study began.", "topic": "Algebra", "difficulty": "Easy"
+        },
+        {
+            "id": "m5", "module": 1, "passage": "The figure shows the lengths, in inches, of two sides of a right triangle. [A right triangle with legs of length 3 and 5.]",
+            "text": "What is the area of the triangle, in square inches?",
+            "options": [], "correctAnswer": "7.5", "topic": "Geometry", "difficulty": "Easy"
+        },
+        {
+            "id": "m6", "module": 1, "passage": "The relationship between two variables, x and y, is linear. For every increase in the value of x by 1, the value of y increases by 8. When the value of x is 2, the value of y is 18.",
+            "text": "Which equation represents this relationship?",
+            "options": ["y = 2x + 18", "y = 2x + 8", "y = 8x + 2", "y = 8x + 26"],
+            "correctAnswer": "y = 8x + 2", "topic": "Algebra", "difficulty": "Medium"
+        },
+        {
+            "id": "m7", "module": 1, "passage": None, "text": "w² + 12w - 40 = 0\nWhich of the following is a solution to the given equation?",
+            "options": ["6 - 2√19", "2√19", "√19", "-6 + 2√19"],
+            "correctAnswer": "-6 + 2√19", "topic": "Advanced Math", "difficulty": "Hard"
+        },
+        {
+            "id": "m8", "module": 1, "passage": "The graph of y = 2x² + bx + c is shown, where b and c are constants. [A parabola opening upwards with its vertex at (-1, -8) and a y-intercept at (0, -6).]",
+            "text": "What is the value of bc?",
+            "options": [], "correctAnswer": "-24", "topic": "Advanced Math", "difficulty": "Hard"
+        },
+        {
+            "id": "m9", "module": 1, "passage": "Right triangle ABC is shown. Angle C is the right angle. [A right triangle ABC, with the right angle at C. The hypotenuse AB has length 54, and angle B is 30°.]",
+            "text": "What is the value of tan A?",
+            "options": ["√3/54", "1/√3", "√3", "27√3"],
+            "correctAnswer": "√3", "topic": "Trigonometry", "difficulty": "Medium"
+        },
+        {
+            "id": "m10", "module": 1, "passage": "A rectangle has an area of 155 square inches. The length of the rectangle is 4 inches less than 7 times the width of the rectangle.",
+            "text": "What is the width of the rectangle, in inches?",
+            "options": [], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium"
+        }
     ]
 }
-ALL_QUESTIONS = QUESTIONS_DATA["math"] + QUESTIONS_DATA["reading_writing"]
+
+ALL_QUESTIONS = QUESTIONS_DATA["reading_writing"] + QUESTIONS_DATA["math"]
 ALL_QUESTIONS_MAP = {q['id']: q for q in ALL_QUESTIONS}
 ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS]
 
 TOTAL_QUESTIONS = len(ALL_QUESTIONS)
-TEST_DURATION_MINUTES = 30
+TEST_DURATION_MINUTES = 30 # You may want to adjust this for a 22-question test.
 
 def initialize_test_session():
     session['current_question_index'] = 0
@@ -103,7 +205,7 @@ def calculate_mock_score(answers):
     for q_id, user_answer in answers.items():
         question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail: continue
-        is_math = any(q_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', []))
+        is_math = q_id.startswith('m')
         if is_math: math_total += 1
         else: rw_total += 1
         if user_answer == question_detail['correctAnswer']:
@@ -133,10 +235,10 @@ def generate_csv_report(score_obj):
     for q_id in ORDERED_QUESTION_IDS:
         question_sequence_number += 1; question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail: writer.writerow([question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing", q_id, "Unknown", "Unknown", f"Details not found for Q_ID: {q_id}", "[]", score_id_val, test_date_str]); continue
-        section_val = "Math" if any(q_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"; skill_type_val = question_detail.get("topic", "N/A"); user_answer_val = user_answers_dict.get(q_id, "Not Answered"); correct_answer_val = question_detail.get("correctAnswer", "N/A"); outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect";
+        section_val = "Math" if q_id.startswith('m') else "Reading & Writing"; skill_type_val = question_detail.get("topic", "N/A"); user_answer_val = user_answers_dict.get(q_id, "Not Answered"); correct_answer_val = question_detail.get("correctAnswer", "N/A"); outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect";
         if user_answer_val == "Not Answered": outcome_val = "Not Answered"
         module_val = question_detail.get("module", "N/A"); difficulty_val = question_detail.get("difficulty", "N/A"); question_text_val = question_detail.get("text", "N/A"); passage_text = question_detail.get("passage")
-        if passage_text: question_text_val = f"[PASSAGE:{passage_text[:20]}...] {question_text_val}"
+        if passage_text: question_text_val = f"[PASSAGE:{passage_text[:50]}...] {question_text_val}"
         all_options_json = json.dumps(question_detail.get("options", []))
         writer.writerow([question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val, q_id, module_val, difficulty_val, question_text_val, all_options_json, score_id_val, test_date_str])
     output.seek(0); return output.getvalue()
@@ -244,7 +346,7 @@ def test_question_page(q_num):
         return redirect(url_for('test_question_page', q_num=q_num))
 
     print(f"--- GET for q_num: {q_num} ---")
-    current_section_name = "Math" if any(question_id == m_q['id'] for m_q in QUESTIONS_DATA.get('math', [])) else "Reading & Writing"
+    current_section_name = "Math" if question_id.startswith('m') else "Reading & Writing"
     current_module = question.get('module', 1)
     is_marked = session.get('marked_for_review', {}).get(question_id, False)
     selected_answer = session.get('answers', {}).get(question_id)

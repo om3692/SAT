@@ -291,7 +291,16 @@ def logout(): logout_user(); flash('You have been logged out.', 'info'); return 
 
 @app.route('/dashboard')
 @login_required
-def dashboard(): user_scores = Score.query.filter_by(user_id=current_user.id).order_by(Score.timestamp.desc()).all(); return render_template('dashboard.html', scores=user_scores, now=datetime.datetime.utcnow())
+def dashboard():
+    user_scores = Score.query.filter_by(user_id=current_user.id).order_by(Score.timestamp.desc()).all()
+    ist_offset = datetime.timedelta(hours=5, minutes=30)
+    ist_timezone = datetime.timezone(ist_offset)
+    for score in user_scores:
+        if score.timestamp:
+            aware_utc_time = score.timestamp.replace(tzinfo=datetime.timezone.utc)
+            local_time = aware_utc_time.astimezone(ist_timezone)
+            score.timestamp = local_time
+    return render_template('dashboard.html', scores=user_scores, now=datetime.datetime.utcnow())
 
 @app.route('/start_test', methods=['POST'])
 @login_required

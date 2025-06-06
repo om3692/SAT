@@ -47,7 +47,7 @@ class Score(db.Model):
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-# --- NEW QUESTION DATA (from SAT Practice Test #6) ---
+# --- QUESTION DATA (from SAT Practice Test #6) ---
 QUESTIONS_DATA = {
     "reading_writing": [
         {
@@ -132,55 +132,58 @@ QUESTIONS_DATA = {
     ],
     "math": [
         {
-            "id": "m1", "module": 1, "passage": None, "text": "(p + 3) + 8 = 10\nWhat value of p is the solution to the given equation?",
+            "id": "m1", "module": 1, "passage": None,
+            "text": "(p + 3) + 8 = 10\nWhat value of p is the solution to the given equation?",
             "options": ["-1", "5", "15", "21"], "correctAnswer": "-1", "topic": "Algebra", "difficulty": "Easy"
         },
         {
-            "id": "m2", "module": 1, "passage": "An object was launched upward from a platform. The graph shown models the height above ground, y, in meters, of the object x seconds after it was launched. [A parabola opening downwards, starting at (0, 10), reaching a vertex near (2.5, 28), and hitting the x-axis around 4.5.]",
-            "text": "For which of the following intervals of time was the height of the object increasing for the entire interval?",
+            "id": "m2", "module": 1, "passage": None,
+            "text": "An object was launched upward from a platform. The graph shown models the height above ground, y, in meters, of the object x seconds after it was launched. [A parabola opening downwards, starting at (0, 10), reaching a vertex near (2.5, 28), and hitting the x-axis around 4.5.]\n\nFor which of the following intervals of time was the height of the object increasing for the entire interval?",
             "options": ["From x=0 to x=2", "From x=0 to x=4", "From x=2 to x=3", "From x=3 to x=4"],
             "correctAnswer": "From x=0 to x=2", "topic": "Data Interpretation", "difficulty": "Easy"
         },
         {
-            "id": "m3", "module": 1, "passage": None, "text": "How many yards are equivalent to 1,116 inches? (1 yard = 36 inches)",
+            "id": "m3", "module": 1, "passage": None,
+            "text": "How many yards are equivalent to 1,116 inches? (1 yard = 36 inches)",
             "options": [], "correctAnswer": "31", "topic": "Problem Solving", "difficulty": "Easy"
         },
         {
-            "id": "m4", "module": 1, "passage": "The function P gives the estimated number of marine mammals in a certain area, where t is the number of years since a study began.",
-            "text": "P(t) = 1,800(1.02)ᵗ\nWhat is the best interpretation of P(0) = 1,800 in this context?",
+            "id": "m4", "module": 1, "passage": None,
+            "text": "P(t) = 1,800(1.02)ᵗ\nThe function P gives the estimated number of marine mammals in a certain area, where t is the number of years since a study began. What is the best interpretation of P(0) = 1,800 in this context?",
             "options": ["The estimated number of marine mammals in the area was 102 when the study began.", "The estimated number of marine mammals in the area was 1,800 when the study began.", "The estimated number of marine mammals in the area increased by 102 each year during the study.", "The estimated number of marine mammals in the area increased by 1,800 each year during the study."],
             "correctAnswer": "The estimated number of marine mammals in the area was 1,800 when the study began.", "topic": "Algebra", "difficulty": "Easy"
         },
         {
-            "id": "m5", "module": 1, "passage": "The figure shows the lengths, in inches, of two sides of a right triangle. [A right triangle with legs of length 3 and 5.]",
-            "text": "What is the area of the triangle, in square inches?",
+            "id": "m5", "module": 1, "passage": None,
+            "text": "The figure shows the lengths, in inches, of two sides of a right triangle. [A right triangle with legs of length 3 and 5.]\n\nWhat is the area of the triangle, in square inches?",
             "options": [], "correctAnswer": "7.5", "topic": "Geometry", "difficulty": "Easy"
         },
         {
-            "id": "m6", "module": 1, "passage": "The relationship between two variables, x and y, is linear. For every increase in the value of x by 1, the value of y increases by 8. When the value of x is 2, the value of y is 18.",
-            "text": "Which equation represents this relationship?",
+            "id": "m6", "module": 1, "passage": None,
+            "text": "The relationship between two variables, x and y, is linear. For every increase in the value of x by 1, the value of y increases by 8. When the value of x is 2, the value of y is 18.\n\nWhich equation represents this relationship?",
             "options": ["y = 2x + 18", "y = 2x + 8", "y = 8x + 2", "y = 8x + 26"],
             "correctAnswer": "y = 8x + 2", "topic": "Algebra", "difficulty": "Medium"
         },
         {
-            "id": "m7", "module": 1, "passage": None, "text": "w² + 12w - 40 = 0\nWhich of the following is a solution to the given equation?",
+            "id": "m7", "module": 1, "passage": None,
+            "text": "w² + 12w - 40 = 0\nWhich of the following is a solution to the given equation?",
             "options": ["6 - 2√19", "2√19", "√19", "-6 + 2√19"],
             "correctAnswer": "-6 + 2√19", "topic": "Advanced Math", "difficulty": "Hard"
         },
         {
-            "id": "m8", "module": 1, "passage": "The graph of y = 2x² + bx + c is shown, where b and c are constants. [A parabola opening upwards with its vertex at (-1, -8) and a y-intercept at (0, -6).]",
-            "text": "What is the value of bc?",
+            "id": "m8", "module": 1, "passage": None,
+            "text": "The graph of y = 2x² + bx + c is shown, where b and c are constants. [A parabola opening upwards with its vertex at (-1, -8) and a y-intercept at (0, -6).]\n\nWhat is the value of bc?",
             "options": [], "correctAnswer": "-24", "topic": "Advanced Math", "difficulty": "Hard"
         },
         {
-            "id": "m9", "module": 1, "passage": "Right triangle ABC is shown. Angle C is the right angle. [A right triangle ABC, with the right angle at C. The hypotenuse AB has length 54, and angle B is 30°.]",
-            "text": "What is the value of tan A?",
+            "id": "m9", "module": 1, "passage": None,
+            "text": "Right triangle ABC is shown. Angle C is the right angle. [A right triangle ABC, with the right angle at C. The hypotenuse AB has length 54, and angle B is 30°.]\n\nWhat is the value of tan A?",
             "options": ["√3/54", "1/√3", "√3", "27√3"],
             "correctAnswer": "√3", "topic": "Trigonometry", "difficulty": "Medium"
         },
         {
-            "id": "m10", "module": 1, "passage": "A rectangle has an area of 155 square inches. The length of the rectangle is 4 inches less than 7 times the width of the rectangle.",
-            "text": "What is the width of the rectangle, in inches?",
+            "id": "m10", "module": 1, "passage": None,
+            "text": "A rectangle has an area of 155 square inches. The length of the rectangle is 4 inches less than 7 times the width of the rectangle.\n\nWhat is the width of the rectangle, in inches?",
             "options": [], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium"
         }
     ]
@@ -191,7 +194,7 @@ ALL_QUESTIONS_MAP = {q['id']: q for q in ALL_QUESTIONS}
 ORDERED_QUESTION_IDS = [q['id'] for q in ALL_QUESTIONS]
 
 TOTAL_QUESTIONS = len(ALL_QUESTIONS)
-TEST_DURATION_MINUTES = 30 # You may want to adjust this for a 22-question test.
+TEST_DURATION_MINUTES = 30
 
 def initialize_test_session():
     session['current_question_index'] = 0

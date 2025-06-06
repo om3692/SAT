@@ -228,23 +228,38 @@ def calculate_mock_score(answers):
     return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "weaknesses": weaknesses, "recommendations": recommendations}
 
 def generate_csv_report(score_obj):
-    output = io.StringIO(); writer = csv.writer(output)
-    writer.writerow(["Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome", "QuestionID", "Module", "Difficulty", "QuestionText", "AllOptions", "ScoreID", "TestDate"])
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome"])
     if not score_obj or not score_obj.answers_data:
-        writer.writerow(["N/A"] * 10 + [score_obj.id if score_obj else "N/A", score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj and score_obj.timestamp else "N/A"]); output.seek(0); return output.getvalue()
-    try: user_answers_dict = json.loads(score_obj.answers_data)
-    except json.JSONDecodeError: writer.writerow(["N/A"] * 5 + ["Error decoding answers"] + ["N/A"] * 4 + [score_obj.id, score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj.timestamp else "N/A"]); output.seek(0); return output.getvalue()
-    test_date_str = score_obj.timestamp.strftime('%Y-%m-%d %H:%M:%S') if score_obj.timestamp else "N/A"; score_id_val = score_obj.id; question_sequence_number = 0
+        writer.writerow(["N/A"] * 6)
+        output.seek(0)
+        return output.getvalue()
+    try:
+        user_answers_dict = json.loads(score_obj.answers_data)
+    except json.JSONDecodeError:
+        writer.writerow(["Error decoding answers"] + ["N/A"] * 5)
+        output.seek(0)
+        return output.getvalue()
+    question_sequence_number = 0
     for q_id in ORDERED_QUESTION_IDS:
-        question_sequence_number += 1; question_detail = ALL_QUESTIONS_MAP.get(q_id)
-        if not question_detail: writer.writerow([question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing", q_id, "Unknown", "Unknown", f"Details not found for Q_ID: {q_id}", "[]", score_id_val, test_date_str]); continue
-        section_val = "Math" if q_id.startswith('m') else "Reading & Writing"; skill_type_val = question_detail.get("topic", "N/A"); user_answer_val = user_answers_dict.get(q_id, "Not Answered"); correct_answer_val = question_detail.get("correctAnswer", "N/A"); outcome_val = "Correct" if user_answer_val == correct_answer_val else "Incorrect";
-        if user_answer_val == "Not Answered": outcome_val = "Not Answered"
-        module_val = question_detail.get("module", "N/A"); difficulty_val = question_detail.get("difficulty", "N/A"); question_text_val = question_detail.get("text", "N/A"); passage_text = question_detail.get("passage")
-        if passage_text: question_text_val = f"[PASSAGE:{passage_text[:50]}...] {question_text_val}"
-        all_options_json = json.dumps(question_detail.get("options", []))
-        writer.writerow([question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val, q_id, module_val, difficulty_val, question_text_val, all_options_json, score_id_val, test_date_str])
-    output.seek(0); return output.getvalue()
+        question_sequence_number += 1
+        question_detail = ALL_QUESTIONS_MAP.get(q_id)
+        if not question_detail:
+            writer.writerow([question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing"])
+            continue
+        section_val = "Math" if q_id.startswith('m') else "Reading & Writing"
+        skill_type_val = question_detail.get("topic", "N/A")
+        user_answer_val = user_answers_dict.get(q_id, "Not Answered")
+        correct_answer_val = question_detail.get("correctAnswer", "N/A")
+        outcome_val = "Incorrect"
+        if user_answer_val == correct_answer_val:
+            outcome_val = "Correct"
+        elif user_answer_val == "Not Answered":
+            outcome_val = "Not Answered"
+        writer.writerow([question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val])
+    output.seek(0)
+    return output.getvalue()
 
 # --- Routes ---
 @app.route('/')
@@ -287,74 +302,53 @@ def start_test():
 @app.route('/update_mark_review_status', methods=['POST'])
 @login_required
 def update_mark_review_status():
-    print("--- /update_mark_review_status CALLED ---")
-    if 'test_questions_ids_ordered' not in session: print("DEBUG: Test session not found in /update_mark_review_status"); return jsonify(success=False, error="Test session not found"), 400
-    data = request.get_json(); print(f"DEBUG: Received data for mark_review: {data}")
-    if not data: print("DEBUG: No data received in /update_mark_review_status"); return jsonify(success=False, error="No data received"), 400
+    if 'test_questions_ids_ordered' not in session: return jsonify(success=False, error="Test session not found"), 400
+    data = request.get_json()
+    if not data: return jsonify(success=False, error="No data received"), 400
     question_id = data.get('question_id'); is_marked = data.get('mark_review')
-    if question_id is None or not isinstance(is_marked, bool): print(f"DEBUG: Invalid data in /update_mark_review_status: q_id={question_id}, is_marked={is_marked}"); return jsonify(success=False, error="Invalid data"), 400
-    if question_id not in session.get('test_questions_ids_ordered', []): print(f"DEBUG: Invalid question_id {question_id} for session in /update_mark_review_status"); return jsonify(success=False, error="Invalid question ID"), 400
+    if question_id is None or not isinstance(is_marked, bool): return jsonify(success=False, error="Invalid data"), 400
+    if question_id not in session.get('test_questions_ids_ordered', []): return jsonify(success=False, error="Invalid question ID"), 400
     session.setdefault('marked_for_review', {})
     if is_marked: session['marked_for_review'][question_id] = True
     else: session['marked_for_review'].pop(question_id, None)
-    session.modified = True; print(f"DEBUG: Mark for review status updated for {question_id}: {is_marked}"); return jsonify(success=True)
+    session.modified = True
+    return jsonify(success=True)
 
 @app.route('/test/question/<int:q_num>', methods=['GET', 'POST'])
 @login_required
 def test_question_page(q_num):
-    print(f"\n--- test_question_page CALLED for q_num: {q_num}, Method: {request.method} ---")
     if 'test_questions_ids_ordered' not in session or not session['test_questions_ids_ordered']:
         flash('Test session not found or expired. Please start a new test.', 'warning')
         return redirect(url_for('index'))
-
     ordered_ids = session['test_questions_ids_ordered']
     q_idx = q_num - 1
-
     if not 0 <= q_idx < len(ordered_ids):
         flash('Invalid question number.', 'danger')
         return redirect(url_for('test_question_page', q_num=1))
-
     session['current_question_index'] = q_idx
     question_id = ordered_ids[q_idx]
     question = ALL_QUESTIONS_MAP.get(question_id)
-
     if not question:
         flash('Error: Question data not found.', 'danger')
         return redirect(url_for('test_question_page', q_num=1))
-
     if request.method == 'POST':
-        print(f"--- POST for q_num: {q_num} ---"); print(f"Request form data: {request.form}")
         selected_option = request.form.get('answer'); action = request.form.get('action')
-        print(f"Selected answer: {selected_option}, Action: {action}")
         if selected_option:
             session.setdefault('answers', {})[question_id] = selected_option
-            print(f"Saved answer for {question_id}: {selected_option}")
         session.modified = True
-
         if action == 'next':
-            print(f"Action 'next'. Current q_num: {q_num}, Next: {q_num + 1}, Total: {len(ordered_ids)}")
             if q_num < len(ordered_ids):
                 return redirect(url_for('test_question_page', q_num=q_num + 1))
             else:
-                print("Last question. Redirecting to results.")
                 return redirect(url_for('results'))
         elif action == 'back':
-            print(f"Action 'back'. Current q_num: {q_num}, Prev: {q_num - 1}")
             if q_num > 1:
                 return redirect(url_for('test_question_page', q_num=q_num - 1))
-            else:
-                return redirect(url_for('test_question_page', q_num=q_num))
-        
-        print(f"Fallback POST: Action '{action}'. Redirecting to current q_num: {q_num}")
         return redirect(url_for('test_question_page', q_num=q_num))
-
-    print(f"--- GET for q_num: {q_num} ---")
     current_section_name = "Math" if question_id.startswith('m') else "Reading & Writing"
     current_module = question.get('module', 1)
     is_marked = session.get('marked_for_review', {}).get(question_id, False)
     selected_answer = session.get('answers', {}).get(question_id)
-    print(f"Rendering for q_idx: {q_idx}, q_id: {question_id}. Marked: {is_marked}, Selected: {selected_answer}")
-    
     return render_template('test_page.html',
                            question=question,
                            question_number=q_num,
@@ -374,25 +368,19 @@ def results():
     if 'answers' not in session or 'start_time' not in session:
         flash('No answers or session expired.', 'warning')
         return redirect(url_for('index'))
-
     user_answers = session.get('answers', {})
     start_time_iso = session.get('start_time')
-
     try:
         if start_time_iso and start_time_iso.endswith('Z'):
             start_time_iso = start_time_iso[:-1]
-        
         start_time = datetime.datetime.fromisoformat(start_time_iso)
     except (ValueError, TypeError):
         start_time = datetime.datetime.utcnow()
-
     end_time = datetime.datetime.utcnow()
     time_taken = (end_time - start_time).total_seconds()
-
     summary = calculate_mock_score(user_answers)
     summary['time_taken_formatted'] = f"{int(time_taken // 60)}m {int(time_taken % 60)}s"
     answers_json = json.dumps(user_answers)
-    
     score = Score(user_id=current_user.id,
                   total_score=summary['total_score'],
                   math_score=summary['math_score'],
@@ -401,13 +389,10 @@ def results():
                   total_answered=summary['total_answered'],
                   answers_data=answers_json,
                   timestamp=end_time)
-                  
     db.session.add(score)
     db.session.commit()
-    
     for key in ['current_question_index', 'answers', 'start_time', 'test_questions_ids_ordered', 'marked_for_review']:
         session.pop(key, None)
-        
     flash('Test results saved!', 'success')
     return render_template('results_page.html', results=summary, score_id=score.id, now=datetime.datetime.utcnow())
 

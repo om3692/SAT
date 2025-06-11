@@ -54,137 +54,137 @@ QUESTIONS_DATA = {
             "id": "rw1", "module": 1, "passage": None,
             "text": "Though not closely related, the hedgehog tenrecs of Madagascar share basic ______ true hedgehogs, including protective spines, pointed snouts, and small body size-traits the two groups of mammals independently developed in response to equivalent roles in their respective habitats.",
             "options": ["examples of", "concerns about", "indications of", "similarities with"],
-            "correctAnswer": "similarities with", "topic": "Words in Context", "difficulty": "Easy"
+            "correctAnswer": "similarities with", "topic": "Words in Context", "difficulty": "Easy", "section": "Reading and Writing"
         },
         {
             "id": "rw2", "module": 1,
             "passage": "The following text is adapted from James Baldwin's 1956 novel Giovanni's Room. The narrator is riding in a taxi down a street lined with food vendors and shoppers in Paris, France.\n'The multitude of Paris seems to be dressed in blue every day but Sunday, when, for the most part, they put on an unbelievably festive black. Here they were now, in blue, disputing, every inch, our passage, with their wagons, handtrucks, their bursting baskets carried at an angle steeply self-confident on the back.'",
             "text": "As used in the text, what does the word \"disputing\" most nearly mean?",
             "options": ["Arguing about", "Disapproving of", "Asserting possession of", "Providing resistance to"],
-            "correctAnswer": "Providing resistance to", "topic": "Words in Context", "difficulty": "Medium"
+            "correctAnswer": "Providing resistance to", "topic": "Words in Context", "difficulty": "Medium", "section": "Reading and Writing"
         },
         {
             "id": "rw3", "module": 1,
             "passage": "When classical pianist Martha Argerich performs, it appears as if the music is coming to her spontaneously. She's highly skilled technically, but because of how freely she plays and her willingness to take risks, she seems relaxed and natural. Her apparent ease, however, is due to a tremendous amount of preparation. Despite Argerich's experience and virtuosity, she never takes for granted that she knows a piece of music. Instead, she approaches the music as if encountering it for the first time and tries to understand it anew.",
             "text": "Which choice best states the main purpose of the text?",
             "options": ["To provide details about how Argerich identifies which pieces of music she will perform", "To assert that Argerich's performances look effortless because of how she prepares for them", "To discuss the kinds of music Argerich feels most comfortable encountering for the first time", "To describe the unique way that Argerich approaches music she hasn't performed before"],
-            "correctAnswer": "To assert that Argerich's performances look effortless because of how she prepares for them", "topic": "Main Purpose", "difficulty": "Medium"
+            "correctAnswer": "To assert that Argerich's performances look effortless because of how she prepares for them", "topic": "Main Purpose", "difficulty": "Medium", "section": "Reading and Writing"
         },
         {
             "id": "rw4", "module": 1,
             "passage": "Text 1\nIn 1954 George Balanchine choreographed a production of The Nutcracker... But the show is stuck in the past, with an old-fashioned story and references, so it should no longer be produced. Ballet needs to create new traditions if it wants to stay relevant to contemporary audiences.\nText 2\nThe Nutcracker is outdated, but it should be kept because it's a holiday favorite and provides substantial income... Although it can be behind the times, there are creative ways to update the show... Her show Hot Chocolate Nutcracker combines ballet, tap, hip-hop, and other styles...",
             "text": "Based on the texts, how would the author of Text 2 most likely respond to the underlined claim in Text 1?",
             "options": ["By questioning the idea that the story of The Nutcracker is stuck in the past...", "By agreeing that contemporary audiences have largely stopped going...", "By pointing out that most dance companies could increase their incomes...", "By suggesting that dance companies should consider offering revised versions of The Nutcracker instead of completely rejecting the show"],
-            "correctAnswer": "By suggesting that dance companies should consider offering revised versions of The Nutcracker instead of completely rejecting the show", "topic": "Comparing Texts", "difficulty": "Medium"
+            "correctAnswer": "By suggesting that dance companies should consider offering revised versions of The Nutcracker instead of completely rejecting the show", "topic": "Comparing Texts", "difficulty": "Medium", "section": "Reading and Writing"
         },
         {
             "id": "rw5", "module": 1,
             "passage": "| Year | Number of cars produced | Number of companies producing cars |\n| :--- | :--- | :--- |\n| 1910 | 123,990 | 320 |\n| 1915 | 548,139 | 224 |\n| 1920 | 1,651,625 | 197 |\n| 1925 | 3,185,881 | 80 |",
             "text": "The student notes that, according to the table, from 1910 to 1925 ______",
             "options": ["the number of cars produced increased but the number of companies producing cars decreased.", "both the number of cars produced and the number of companies producing cars remained unchanged.", "the number of cars produced decreased but the number of companies producing cars remained unchanged.", "both the number of cars produced and the number of companies producing cars increased."],
-            "correctAnswer": "the number of cars produced increased but the number of companies producing cars decreased.", "topic": "Data Interpretation", "difficulty": "Easy"
+            "correctAnswer": "the number of cars produced increased but the number of companies producing cars decreased.", "topic": "Data Interpretation", "difficulty": "Easy", "section": "Reading and Writing"
         },
         {
             "id": "rw6", "module": 1,
             "passage": "External shopping cues are a type of marketing that uses obvious messaging... The researchers explain that trying to find items in new locations causes shoppers to move through more of the store, exposing them to more products and increasing the likelihood that they'll buy an item they hadn't planned on purchasing.",
             "text": "Which response from a survey given to shoppers who made a purchase at a retail store best supports the researchers' explanation?",
             "options": ["\"I needed to buy some cleaning supplies, but they weren't in their regular place. While I was looking for them, I saw this interesting notebook and decided to buy it, too.\"", "\"I didn't buy everything on my shopping list today. I couldn't find a couple of the items in the store, even though I looked all over for them.\"", "\"The store sent me a coupon for a new brand of soup, so I came here to find out what kinds of soup that brand offers. I decided to buy a few cans because I had the coupon.\"", "\"This store is larger than one that's closer to where I live, and it carries more products. I came here to buy some things that the other store doesn't always have.\""],
-            "correctAnswer": "\"I needed to buy some cleaning supplies, but they weren't in their regular place. While I was looking for them, I saw this interesting notebook and decided to buy it, too.\"", "topic": "Supporting Claims", "difficulty": "Medium"
+            "correctAnswer": "\"I needed to buy some cleaning supplies, but they weren't in their regular place. While I was looking for them, I saw this interesting notebook and decided to buy it, too.\"", "topic": "Supporting Claims", "difficulty": "Medium", "section": "Reading and Writing"
         },
         {
             "id": "rw7", "module": 1,
             "passage": "To investigate potential cognitive benefits of taking leave from work...researchers concluded that longer leave times might not confer a greater cognitive benefit than shorter leave times do. [A bar chart shows that for the second and third tests, the '2-4 days leave' group had higher attentiveness scores than the '1-5 weeks leave' group.]",
             "text": "Which choice best describes data from the graph that support the researchers' conclusion?",
             "options": ["...participants who took 2-4 days of leave had higher average attentiveness scores than did those who took no leave...", "...participants who took 2-4 days of leave had lower average attentiveness scores than...", "In both the second and third test administrations, participants who took 2-4 days of leave had higher average attentiveness scores than did participants who took 1-5 weeks of leave.", "...participants who took 2-4 days of leave had higher average attentiveness scores than did those who took no leave."],
-            "correctAnswer": "In both the second and third test administrations, participants who took 2-4 days of leave had higher average attentiveness scores than did participants who took 1-5 weeks of leave.", "topic": "Data Interpretation", "difficulty": "Hard"
+            "correctAnswer": "In both the second and third test administrations, participants who took 2-4 days of leave had higher average attentiveness scores than did participants who took 1-5 weeks of leave.", "topic": "Data Interpretation", "difficulty": "Hard", "section": "Reading and Writing"
         },
         {
             "id": "rw8", "module": 1, "passage": None,
             "text": "______ by businessman William A.G. Brown, the saloon was known to offer elegant accommodations and an inclusive environment.",
             "options": ["Created", "Creates", "Creating", "Create"],
-            "correctAnswer": "Created", "topic": "Grammar", "difficulty": "Easy"
+            "correctAnswer": "Created", "topic": "Grammar", "difficulty": "Easy", "section": "Reading and Writing"
         },
         {
             "id": "rw9", "module": 1, "passage": None,
             "text": "It's an example of antimetabole, a writing technique that ______ emphasis by repeating a statement in a reversed order.",
             "options": ["create", "are creating", "have created", "creates"],
-            "correctAnswer": "creates", "topic": "Grammar", "difficulty": "Easy"
+            "correctAnswer": "creates", "topic": "Grammar", "difficulty": "Easy", "section": "Reading and Writing"
         },
         {
             "id": "rw10", "module": 1, "passage": None,
             "text": "A ray diagram reveals how this ______ the hole's small size restricts light to a single ray, all light passing through the hole can only arrive at a single destination, eliminating diffraction and ensuring a clear image.",
             "options": ["works because", "works. Because", "works, it's because", "works: it's because"],
-            "correctAnswer": "works because", "topic": "Punctuation", "difficulty": "Medium"
+            "correctAnswer": "works because", "topic": "Punctuation", "difficulty": "Medium", "section": "Reading and Writing"
         },
         {
             "id": "rw11", "module": 1, "passage": None,
             "text": "Before it unveiled a massive new gallery in 2009, the Art Institute of Chicago was only able to display about 5% of its art collection. ______ the museum is able to display close to 30% of its collection.",
             "options": ["Additionally,", "For example,", "Nevertheless,", "Today,"],
-            "correctAnswer": "Today,", "topic": "Logical Transitions", "difficulty": "Easy"
+            "correctAnswer": "Today,", "topic": "Logical Transitions", "difficulty": "Easy", "section": "Reading and Writing"
         },
         {
             "id": "rw12", "module": 1,
             "passage": "Notes:\n- In the 1930s, the Imperial Sugar Cane Institute in India sought to limit the country's dependence on imported sugarcane.\n- The institute enlisted botanist Janaki Ammal to breed a local variety of sugarcane.\n- She crossbred the imported sugarcane species Saccharum officinarum with grasses native to India.\n- She succeeded in creating sugarcane hybrids well suited to India's climate.",
             "text": "The student wants to emphasize Janaki Ammal's achievement. Which choice most effectively uses relevant information from the notes to accomplish this goal?",
             "options": ["By crossbreeding the imported sugarcane species Saccharum officinarum with grasses native to India, Ammal succeeded in creating sugarcane hybrids well suited to India's climate.", "In the 1930s, the Imperial Sugar Cane Institute, which enlisted Ammal, sought to limit dependence on imported sugarcane.", "Ammal was enlisted by the Imperial Sugar Cane Institute at a time when a local variety of sugarcane needed to be produced.", "As part of efforts to breed a local variety of sugarcane, an imported sugarcane species called Saccharum officinarum was crossbred with grasses native to India."],
-            "correctAnswer": "By crossbreeding the imported sugarcane species Saccharum officinarum with grasses native to India, Ammal succeeded in creating sugarcane hybrids well suited to India's climate.", "topic": "Rhetorical Synthesis", "difficulty": "Medium"
+            "correctAnswer": "By crossbreeding the imported sugarcane species Saccharum officinarum with grasses native to India, Ammal succeeded in creating sugarcane hybrids well suited to India's climate.", "topic": "Rhetorical Synthesis", "difficulty": "Medium", "section": "Reading and Writing"
         }
     ],
     "math": [
         {
             "id": "m1", "module": 1, "passage": None,
             "text": "(p + 3) + 8 = 10\nWhat value of p is the solution to the given equation?",
-            "options": ["-1", "5", "15", "21"], "correctAnswer": "-1", "topic": "Algebra", "difficulty": "Easy"
+            "options": ["-1", "5", "15", "21"], "correctAnswer": "-1", "topic": "Algebra", "difficulty": "Easy", "section": "Math"
         },
         {
             "id": "m2", "module": 1, "passage": None,
             "text": "An object was launched upward from a platform. The graph shown models the height above ground, y, in meters, of the object x seconds after it was launched. [A parabola opening downwards, starting at (0, 10), reaching a vertex near (2.5, 28), and hitting the x-axis around 4.5.]\n\nFor which of the following intervals of time was the height of the object increasing for the entire interval?",
             "options": ["From x=0 to x=2", "From x=0 to x=4", "From x=2 to x=3", "From x=3 to x=4"],
-            "correctAnswer": "From x=0 to x=2", "topic": "Data Interpretation", "difficulty": "Easy"
+            "correctAnswer": "From x=0 to x=2", "topic": "Data Interpretation", "difficulty": "Easy", "section": "Math"
         },
         {
             "id": "m3", "module": 1, "passage": None,
             "text": "How many yards are equivalent to 1,116 inches? (1 yard = 36 inches)",
-            "options": [], "correctAnswer": "31", "topic": "Problem Solving", "difficulty": "Easy"
+            "options": [], "correctAnswer": "31", "topic": "Problem Solving", "difficulty": "Easy", "section": "Math"
         },
         {
             "id": "m4", "module": 1, "passage": None,
             "text": "P(t) = 1,800(1.02)ᵗ\nThe function P gives the estimated number of marine mammals in a certain area, where t is the number of years since a study began. What is the best interpretation of P(0) = 1,800 in this context?",
             "options": ["The estimated number of marine mammals in the area was 102 when the study began.", "The estimated number of marine mammals in the area was 1,800 when the study began.", "The estimated number of marine mammals in the area increased by 102 each year during the study.", "The estimated number of marine mammals in the area increased by 1,800 each year during the study."],
-            "correctAnswer": "The estimated number of marine mammals in the area was 1,800 when the study began.", "topic": "Algebra", "difficulty": "Easy"
+            "correctAnswer": "The estimated number of marine mammals in the area was 1,800 when the study began.", "topic": "Algebra", "difficulty": "Easy", "section": "Math"
         },
         {
             "id": "m5", "module": 1, "passage": None,
             "text": "The figure shows the lengths, in inches, of two sides of a right triangle. [A right triangle with legs of length 3 and 5.]\n\nWhat is the area of the triangle, in square inches?",
-            "options": [], "correctAnswer": "7.5", "topic": "Geometry", "difficulty": "Easy"
+            "options": [], "correctAnswer": "7.5", "topic": "Geometry", "difficulty": "Easy", "section": "Math"
         },
         {
             "id": "m6", "module": 1, "passage": None,
             "text": "The relationship between two variables, x and y, is linear. For every increase in the value of x by 1, the value of y increases by 8. When the value of x is 2, the value of y is 18.\n\nWhich equation represents this relationship?",
             "options": ["y = 2x + 18", "y = 2x + 8", "y = 8x + 2", "y = 8x + 26"],
-            "correctAnswer": "y = 8x + 2", "topic": "Algebra", "difficulty": "Medium"
+            "correctAnswer": "y = 8x + 2", "topic": "Algebra", "difficulty": "Medium", "section": "Math"
         },
         {
             "id": "m7", "module": 1, "passage": None,
             "text": "w² + 12w - 40 = 0\nWhich of the following is a solution to the given equation?",
             "options": ["6 - 2√19", "2√19", "√19", "-6 + 2√19"],
-            "correctAnswer": "-6 + 2√19", "topic": "Advanced Math", "difficulty": "Hard"
+            "correctAnswer": "-6 + 2√19", "topic": "Advanced Math", "difficulty": "Hard", "section": "Math"
         },
         {
             "id": "m8", "module": 1, "passage": None,
             "text": "The graph of y = 2x² + bx + c is shown, where b and c are constants. [A parabola opening upwards with its vertex at (-1, -8) and a y-intercept at (0, -6).]\n\nWhat is the value of bc?",
-            "options": [], "correctAnswer": "-24", "topic": "Advanced Math", "difficulty": "Hard"
+            "options": [], "correctAnswer": "-24", "topic": "Advanced Math", "difficulty": "Hard", "section": "Math"
         },
         {
             "id": "m9", "module": 1, "passage": None,
             "text": "Right triangle ABC is shown. Angle C is the right angle. [A right triangle ABC, with the right angle at C. The hypotenuse AB has length 54, and angle B is 30°.]\n\nWhat is the value of tan A?",
             "options": ["√3/54", "1/√3", "√3", "27√3"],
-            "correctAnswer": "√3", "topic": "Trigonometry", "difficulty": "Medium"
+            "correctAnswer": "√3", "topic": "Trigonometry", "difficulty": "Medium", "section": "Math"
         },
         {
             "id": "m10", "module": 1, "passage": None,
             "text": "A rectangle has an area of 155 square inches. The length of the rectangle is 4 inches less than 7 times the width of the rectangle.\n\nWhat is the width of the rectangle, in inches?",
-            "options": [], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium"
+            "options": [], "correctAnswer": "5", "topic": "Algebra", "difficulty": "Medium", "section": "Math"
         }
     ]
 }
@@ -228,36 +228,68 @@ def calculate_mock_score(answers):
     return {"total_score": mock_total_score, "math_score": mock_math_score, "rw_score": mock_rw_score, "correct_count": correct_count, "total_answered": len(answers), "weaknesses": weaknesses, "recommendations": recommendations}
 
 def generate_csv_report(score_obj):
+    """
+    Generates a CSV report from a score object in the specified format.
+    """
     output = io.StringIO()
     writer = csv.writer(output)
-    writer.writerow(["Question Number", "Section", "Skill Type", "Your Answer", "Correct Answer", "Outcome"])
+    
+    # Write the header row as per the user's image
+    writer.writerow([
+        "Section", "Question Number", "Your Answer", "Correct Answer", 
+        "Outcome", "Skill Type", "Time Spent (Seconds)"
+    ])
+
     if not score_obj or not score_obj.answers_data:
-        writer.writerow(["N/A"] * 6)
+        writer.writerow(["N/A"] * 7)
         output.seek(0)
         return output.getvalue()
+
     try:
         user_answers_dict = json.loads(score_obj.answers_data)
     except json.JSONDecodeError:
-        writer.writerow(["Error decoding answers"] + ["N/A"] * 5)
+        writer.writerow(["Error decoding answers"] + ["N/A"] * 6)
         output.seek(0)
         return output.getvalue()
-    question_sequence_number = 0
+
+    # Initialize counters for question numbers within each section
+    section_question_counters = {"Reading and Writing": 0, "Math": 0}
+
     for q_id in ORDERED_QUESTION_IDS:
-        question_sequence_number += 1
         question_detail = ALL_QUESTIONS_MAP.get(q_id)
         if not question_detail:
-            writer.writerow([question_sequence_number, "Unknown", "Unknown", "N/A", "N/A", "Question detail missing"])
             continue
-        section_val = "Math" if q_id.startswith('m') else "Reading & Writing"
-        skill_type_val = question_detail.get("topic", "N/A")
-        user_answer_val = user_answers_dict.get(q_id, "Not Answered")
-        correct_answer_val = question_detail.get("correctAnswer", "N/A")
-        outcome_val = "Incorrect"
-        if user_answer_val == correct_answer_val:
-            outcome_val = "Correct"
-        elif user_answer_val == "Not Answered":
-            outcome_val = "Not Answered"
-        writer.writerow([question_sequence_number, section_val, skill_type_val, user_answer_val, correct_answer_val, outcome_val])
+
+        # Determine the section and increment the respective counter
+        section_name = question_detail.get("section", "Unknown")
+        if section_name in section_question_counters:
+            section_question_counters[section_name] += 1
+            question_number_in_section = section_question_counters[section_name]
+        else:
+            question_number_in_section = "N/A"
+
+        user_answer = user_answers_dict.get(q_id, "Not Answered")
+        correct_answer = question_detail.get("correctAnswer", "N/A")
+        
+        # Determine the outcome
+        if user_answer == "Not Answered":
+            outcome = "Not Answered"
+        elif user_answer == correct_answer:
+            outcome = "Correct"
+        else:
+            outcome = "Incorrect"
+
+        skill_type = question_detail.get("topic", "N/A")
+        
+        # Time spent is not tracked, so it's marked as N/A
+        time_spent = "N/A"
+
+        # Write the data row
+        writer.writerow([
+            section_name, question_number_in_section, user_answer, 
+            correct_answer, outcome, skill_type, time_spent
+        ])
+    
     output.seek(0)
     return output.getvalue()
 
